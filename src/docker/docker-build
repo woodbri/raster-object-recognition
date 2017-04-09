@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+import context
+
+print context.CONFIG
+
+#docker build -t my_image_processing .

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+sudo docker run -it \
+    --add-host=database:10.2.1.52 \
+    --user=$(id -u) \
+    --net host \
+    -e DISPLAY=$DISPLAY \
+    --workdir="/home/$USER" \
+    --volume="/home/$USER:/home/$USER" \
+    --volume="/etc/group:/etc/group:ro" \
+    --volume="/etc/passwd:/etc/passwd:ro" \
+    --volume="/etc/shadow:/etc/shadow:ro" \
+    --volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
+    --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
+    --volume="/u:/u:rw" \
+    my_image_processing
+
