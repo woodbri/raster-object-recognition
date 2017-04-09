@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+'''
+--------------------------------------------------------------------
+    This file is part of the raster object recognition project.
+
+    https://github.com/woodbri/raster-object-recognition
+
+    MIT License. See LICENSE file for details.
+
+    Copyright 2017, Stephen Woodbridge
+--------------------------------------------------------------------
+'''
 
 
 import os
