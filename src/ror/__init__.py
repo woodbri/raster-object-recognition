@@ -18,3 +18,4 @@ from info import *
 from initdb import *
 from census_fetch import *
 from fetchnaip import *
+from status import *
