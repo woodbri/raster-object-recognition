@@ -33,6 +33,10 @@ CONFIG = {
     # set verbose for debugging
     'verbose': True,
 
+    # set nproc to number of processes to use
+    # set to 0 to use all cpus
+    'nproc': 0,
+
     # set the home directory for this project
     'projectHomeDir': '/u/ror/buildings',
 
@@ -42,6 +46,22 @@ CONFIG = {
     'dbhost': 'localhost',
     'dbport': '5435',
     'dbpass': '',
+
+    # set the number of cpu's to use for processing
+    # this can be commented out and the system
+    # will check how many cpu's are available
+    # on Mac OSX you should set this value as appropriate
+    # otherwise it will default to 1
+    #'ncpu': 4,
+
+    # configure tmp dirs
+    # if you have multiple disks, you can configure multiple
+    # tmp dirs, one on each disk
+    # during some multi-processing we can spread the work over
+    # these tmps dirs to reduce disk I/O contension
+    # the default location if not configured is
+    # 'projectHomeDir'/tmp/
+    'tmpdirs':['/u/ror/buildings/tmp/'],
 
     # Area Of Interest can be defined as:
     # bbox with [xmin, ymin, xmax, ymax]
@@ -74,8 +94,12 @@ CONFIG = {
             # for 2014: where {0} = filename[2:7], {1} = filename[:26] + '.tif'
             }
     },
-    'naip.shptable': 'doqqs',
+    'naip.projection': 'EPSG:4326',
+    'naip.download': 'data/naip/download',
     'naip.doqq_dir': 'data/naip/doqqs',
+    'naip.shapefile': 'data/naip/shapefile',
+    'naip.shptable': 'naipbbox{0}',         # {0} - year
+    'naip.sobel': True,
 
     # set the url and optional bbox for OSM data
     'osm.url': None,
@@ -104,6 +128,10 @@ def checkConfig():
         sys.exit(1)
     else:
         conn.close()
+
+    # additional checks can be added here to make sure reasonable
+    # defaults are assigned and that all critial variables exist
+    # TODO
 
 
 checkConfig()

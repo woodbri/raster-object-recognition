@@ -1,7 +1,4 @@
-#!/usr/bin/env python
+#!/bin/sh
 
-import context
+sudo docker build -t my_image_processing .
 
-print context.CONFIG
-
-#docker build -t my_image_processing .

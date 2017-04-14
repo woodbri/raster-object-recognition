@@ -23,8 +23,11 @@ Usage: ror_cli [-h|--help]
        ror_cli cmd [-h|--help]
     where cmd may be:
        info              - print config info
+
        init-db           - load extension and creates schemas if needed 
+
        census-fetch      - download census data and load it into database
+
        naip-fetch [args] - based on area of interest in config.py fetch NAIP
             [-y year]      defaults to configured year
             [--no-shp]     don't fetch the shapefiles (presumes they are loaded
@@ -33,10 +36,21 @@ Usage: ror_cli [-h|--help]
             [--status]     report status on the naip inventory
             [-a|--area fips|bbox] only fetch DOQQs in this fips area or
                                   xmin,ymin,xmax,ymax bbox area
+
        naip-process      - convert raw NAIP imagery into a compress working set
+            [-y|--year year] - naip year, defaults to config year
+            [-n|-nproc n]    - num of process, defaults to config or 1, 0=all
+            [-l|--limit n]   - limit number of files to process (for debugging)
+            [-s|-sobel]      - invert the configured sobel setting
+            [-f|--files file [file ...]] process this list of files, default
+                             is all downloaded files not already processed
+
        segment           - segment some of all of area of interest
+
        train             - train some or all of training area and save data
+
        search            - using saved training data search for objects
+
     use help option for details on the cmd usage.
 '''
     sys.exit(2)
@@ -56,7 +70,7 @@ def Main(argv):
     elif argv[0] == 'naip-fetch':
         FetchNaip( argv[1:] )
     elif argv[0] == 'naip-process':
-        pass
+        ProcessNaip(  argv[1:] )
     elif argv[0] == 'osm-buildings':
         pass
     elif argv[0] == 'segment':

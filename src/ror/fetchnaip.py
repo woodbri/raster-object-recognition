@@ -35,7 +35,8 @@ def getLoadNaipShp(year, allStates):
         states = [FIPS2ST[CONFIG['areaOfInterest'][:2]]]
 
     # define where the files will get put
-    shpdir = os.path.join(CONFIG['projectHomeDir'], 'naip', year, 'shape')
+    shp = CONFIG['naip.shapefile']
+    shpdir = os.path.join(CONFIG['projectHomeDir'], shp, year)
     print 'shpdir:', shpdir
     if not os.path.exists( shpdir ):
         os.makedirs( shpdir )
@@ -52,7 +53,8 @@ def getLoadNaipShp(year, allStates):
         subprocess.call( cmd )
 
     zipfile = r'.*\.zip$'
-    loadZippedShape( 'naip.naipbbox{}'.format(year), shpdir, zipfile )
+    table = CONFIG.get('naip.shptable', 'naip.naipbbox{0}')
+    loadZippedShape( table.format(year), shpdir, zipfile )
 
 
 
@@ -61,7 +63,7 @@ def getNaipFiles(year, areaOfInterest, donaip):
     verbose = CONFIG.get('verbose', False)
 
     home = CONFIG['projectHomeDir']
-    doqqs = CONFIG['naip.doqq_dir']
+    doqqs = CONFIG['naip.download']
     doqqDir = os.path.join( home, doqqs, year )
     if not os.path.exists(doqqDir):
         os.makedirs(doqqDir)
@@ -80,8 +82,9 @@ def getNaipFiles(year, areaOfInterest, donaip):
         return True
 
     # create table if not exists to log downloaded DOQQs
-    sql = '''create table if not exists naipfetched{} (
-        gid integer not null primary key)'''.format(year)
+    sql = '''create table if not exists naip.naipfetched{} (
+        gid integer not null primary key,
+        processed boolean)'''.format(year)
     cur.execute( sql )
 
     # use default areaOfInterest in CONFIG

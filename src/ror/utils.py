@@ -17,6 +17,8 @@ import subprocess
 import psycopg2
 from config import *
 
+DEVNULL = open(os.devnull, 'w')
+
 
 def unique(seq, idfun=None):
     # order preserving
@@ -33,6 +35,15 @@ def unique(seq, idfun=None):
         seen[marker] = 1
         result.append(item)
     return result
+
+
+
+def runCommand(cmd, verbose):
+    if verbose:
+        print ' '.join( cmd )
+        subprocess.call( cmd )
+    else:
+        subprocess.call( cmd, stdout=DEVNULL, stderr=subprocess.STDOUT )
 
 
 

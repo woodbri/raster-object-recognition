@@ -22,14 +22,16 @@ RUN apt-get -qqy update &&\
         add-apt-repository ppa:ubuntugis/ppa &&\
         apt-get -qqy update &&\
         apt-get -qqy install \
-          sudo \
-          imagemagick \
-          vim \
           gdal-bin \
+          imagemagick \
           libotb \
+          libterm-readline-perl-perl \
+          locales-all \
           monteverdi \
           otb-bin \
           otb-bin-qt \
+          python-setuptools \
+          python-pkg-resources \
           python-gdal \
           python-matplotlib \
           python-matplotlib-data \
@@ -43,9 +45,13 @@ RUN apt-get -qqy update &&\
           python-sklearn \
           python-psycopg2 \
           python-numpy \
+          rasterio \
+          sudo \
+          vim \
           && \
-        apt-get clean &&\
-        rm -rf /var/lib/apt/lists/*
+        apt-get clean && \
+        rm -rf /var/lib/apt/lists/* && \
+        sed -i 's/python3/python2/' /usr/bin/rasterio
 
 ENTRYPOINT
 CMD ["/bin/bash"]
