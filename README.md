@@ -33,6 +33,15 @@ The Docker container is not required if you are already running Ubuntu 16.04+
 or want to resolve the dependencies on your host system. See the file
 *Dockerfile* for the list of packages to install.
 
+### Docker
+
+If you don't have Docker installed on your system, then go
+[HERE](https://www.docker.com/) and find the downloads or instsrtuctions for
+your system and install the Docker runtime.
+
+There example scripts to build a Docker image and to run the Docker image in
+``src/docker/``.
+
 ### Use of host services
 
 * Disk space through docker volume maps
