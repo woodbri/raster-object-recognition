@@ -19,7 +19,7 @@ def reportNaipStatus(args):
     conn, cur = getDatabase()
 
     # report for year
-    year = args.get('year', CONFIG['naip.url']['year'])
+    year = args.get('year', CONFIG['year'])
 
     # number of possible doqqs by state
     sql = 'select st, count(*) from naipbbox{} group by st order by st'.format(year)

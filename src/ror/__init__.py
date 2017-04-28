@@ -20,3 +20,6 @@ from census_fetch import *
 from fetchnaip import *
 from naipprocess import *
 from status import *
+from minboundingcircle import getCircle
+from segmentation import Segmentation
+from polygonstats import PolygonStats, addShapefileStats

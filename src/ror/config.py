@@ -14,21 +14,6 @@ import sys
 import psycopg2
 #from config import *
 
-FIPS2ST = {
-    '01':'al', '02':'ak', '60':'as', '03':'as', '04':'az',
-    '05':'ar', '06':'ca', '08':'co', '09':'ct', '10':'de',
-    '11':'dc', '12':'fl', '64':'fm', '13':'ga', '66':'gu',
-    '15':'hi', '16':'id', '17':'il', '18':'in', '20':'ks',
-    '21':'ky', '22':'la', '23':'me', '68':'mh', '24':'md',
-    '25':'ma', '27':'mn', '28':'ms', '29':'mo', '30':'mt',
-    '31':'ne', '32':'nv', '33':'nh', '34':'nj', '35':'nm',
-    '36':'ny', '37':'nc', '38':'nd', '69':'mp', '39':'oh',
-    '40':'ok', '41':'or', '70':'pw', '42':'pa', '72':'pr',
-    '44':'ri', '45':'sc', '46':'sd', '47':'tn', '48':'tx',
-    '49':'ut', '50':'vt', '51':'va', '78':'vi', '53':'wa',
-    '54':'wv', '55':'wi', '56':'wy'
-    }
-
 CONFIG = {
     # set verbose for debugging
     'verbose': True,
@@ -65,12 +50,17 @@ CONFIG = {
 
     # Area Of Interest can be defined as:
     # bbox with [xmin, ymin, xmax, ymax]
-    # of as US Census FIPS string like 'ss|ssccc|sscccnnnnn'
+    # or as US Census FIPS string like 'ss|ssccc|sscccnnnnn'
     # where ss = state code
     #       ccc = county code
     #       nnnnn = county sub-division code
     #'areaOfInterest': [],
     'areaOfInterest': '06',
+
+    # define the year we are working with
+    'year': '2014',
+
+    # ----------------- census support data ---------------------
 
     # set the urls for fetch the census files
     # set census.url = '' to disable this feature
@@ -82,9 +72,10 @@ CONFIG = {
         'cousub': ['COUSUB', 'tl_%s_%s_cousub.zip']
     },
 
+    # ----------------- NAIP DOQQ Resources ----------------------
+
     # set the urls for fetching NAIP imagery
     'naip.url': {
-        'year': '2014',
         'shp.url': 'https://www.fsa.usda.gov/Assets/USDA-FSA-Public/usdafiles/APFO/imagery-programs/zips/naip/{0}/{1}_naip{2}qq.zip',
         # where {0} = YEAR, {1} = st abbrev lowercase, {2} = YY year
         'doqq.urls': {
@@ -94,6 +85,9 @@ CONFIG = {
             # for 2014: where {0} = filename[2:7], {1} = filename[:26] + '.tif'
             }
     },
+
+    # ----------------- Misc NAIP processing info ------------------
+
     'naip.projection': 'EPSG:4326',
     'naip.download': 'data/naip/download',
     'naip.doqq_dir': 'data/naip/doqqs',
@@ -101,9 +95,46 @@ CONFIG = {
     'naip.shptable': 'naipbbox{0}',         # {0} - year
     'naip.sobel': True,
 
+    # ----------------- OSM building data --------------------------
+
     # set the url and optional bbox for OSM data
     'osm.url': None,
-    'osm.bbox': None
+    'osm.bbox': None,
+
+    # ---------------- Segmentation paramaters ----------------------
+
+    'seg.ram': 4096,    # (int) available ram for processing in MB
+    'seg.spatialr': 16, # (int) Spatial radius of neighborhood pixels
+    'seg.ranger': 16,   # (float) Range radius in radiometry units in
+                        # in the multi-spectral space
+    'seg.thresh': 0.1,  # (float) mode convergence threshold
+    'seg.rangeramp': 0, # (float) ranger radius coefficient where:
+                        #       y = ramgeramp*x+ranger
+    'seg.max-iter': 100,# (int) max number of iterations to convergence
+    'seg.minsize': 100, # (int) minimum size of segment (pixels)
+                        # smaller segments will get merged to closest
+                        # similar adjacent segment
+    'seg.tilesize': 1024,    # size of tiles used in processing
+    'seg.shapedir': 'data/segments',
+    'seg.table': 'segments.y{0}_{1}', # {0}= year, {1}= jobname
+
+    # ---------------- end of config data ----------------------------
+    'EOF': True
+    }
+
+FIPS2ST = {
+    '01':'al', '02':'ak', '60':'as', '03':'as', '04':'az',
+    '05':'ar', '06':'ca', '08':'co', '09':'ct', '10':'de',
+    '11':'dc', '12':'fl', '64':'fm', '13':'ga', '66':'gu',
+    '15':'hi', '16':'id', '17':'il', '18':'in', '20':'ks',
+    '21':'ky', '22':'la', '23':'me', '68':'mh', '24':'md',
+    '25':'ma', '27':'mn', '28':'ms', '29':'mo', '30':'mt',
+    '31':'ne', '32':'nv', '33':'nh', '34':'nj', '35':'nm',
+    '36':'ny', '37':'nc', '38':'nd', '69':'mp', '39':'oh',
+    '40':'ok', '41':'or', '70':'pw', '42':'pa', '72':'pr',
+    '44':'ri', '45':'sc', '46':'sd', '47':'tn', '48':'tx',
+    '49':'ut', '50':'vt', '51':'va', '78':'vi', '53':'wa',
+    '54':'wv', '55':'wi', '56':'wy'
     }
 
 def checkConfig():

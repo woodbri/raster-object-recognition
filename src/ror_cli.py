@@ -45,7 +45,20 @@ Usage: ror_cli [-h|--help]
             [-f|--files file [file ...]] process this list of files, default
                              is all downloaded files not already processed
 
-       segment           - segment some of all of area of interest
+       segment           - segment some or all of area of interest
+            [-a|--area fips|bbox]   - only process this fips area or
+                                      xmin,ymin,xmax,ymax bbox area
+            [-s|--spatialr int]     - spatial radius of neigborhood in pixels
+            [-r|--ranger float]     - radiometric radius in multi-spectral space
+            [-t|--thresh float]     - convergence threshold
+            [-i|--max-iter int]     - max interation during convergence
+            [-p|--rangeramp float]  - range radius coefficient where:
+                                      y = rangeramp*x+ranger
+            [-m|--minsize int]      - minimum segment size in pixels
+            [-T|--tilesize int]     - size of tiles in pixels
+            [-R|--ram int(MB)]      - available ram for processing
+            [-j|--job name]         - unique job name, will be used to
+                                      to create table to store segments in
 
        train             - train some or all of training area and save data
 
@@ -74,7 +87,7 @@ def Main(argv):
     elif argv[0] == 'osm-buildings':
         pass
     elif argv[0] == 'segment':
-        pass
+        Segmentation( argv[1:] )
     elif argv[0] == 'train':
         pass
     elif argv[0] == 'search':

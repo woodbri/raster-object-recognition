@@ -193,7 +193,7 @@ def FetchNaip( argv ):
     except:
         return True # error occurred
 
-    year = CONFIG['naip.url']['year']
+    year = CONFIG['year']
     doshp = True
     donaip = True
     dostatus = False

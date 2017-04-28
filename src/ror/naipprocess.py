@@ -278,7 +278,7 @@ def ProcessNaip( argv ):
         return True # error occurred
 
     verbose = CONFIG.get('verbose', False)
-    year = CONFIG['naip.url']['year']
+    year = CONFIG['year']
     nproc = CONFIG.get('nproc', 1)
     limit = 0
     sobel = CONFIG.get('naip.sobel', False)

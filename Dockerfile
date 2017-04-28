@@ -51,7 +51,14 @@ RUN apt-get -qqy update &&\
           && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/* && \
-        sed -i 's/python3/python2/' /usr/bin/rasterio
+        sed -i 's/python3/python2/' /usr/bin/rasterio && \
+        echo "try:" >> /etc/python2.7/sitecustomize.py && \
+        echo "    import sys" >> /etc/python2.7/sitecustomize.py && \
+        echo "    sys.path.append('/usr/lib/otb/python')" >> /etc/python2.7/sitecustomize.py && \
+        echo "except:" >> /etc/python2.7/sitecustomize.py && \
+        echo "    pass" >> /etc/python2.7/sitecustomize.py && \
+        python -c 'from skimage import io'
+
 
 ENTRYPOINT
 CMD ["/bin/bash"]
