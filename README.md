@@ -90,8 +90,8 @@ project/
 
 ## Segmentation and Optimization of Parameters
 
-A key to successful segmentation is pick parameters that are best suited to the
-objects that you care about. There is no optimal parameters when you are
+A key to successful segmentation is picking parameters that are best suited to
+the objects that you care about. There is no optimal parameters when you are
 considering large scale areas. For example, think about the similarities and
 differences in residential buildings, large commercial buildings, parking lots,
 agricultural farmed areas at different times in the growing cycle. These are
@@ -111,12 +111,25 @@ effect on image classification accuracy", 2010, Dongping Ming, Jianyu Yang, Long
 5. "Semivariogram-Based Spatial Bandwidth Selection for Remote Sensing Image Segmentation With Mean-Shift Algorithm", 2012, Dongping Ming, Tianyu Ci, Hongyue Cai, Longxiang Li, Cheng Qiao, and Jinyang Du
 
 From these papers, I decided to use the semivariogram approach to select the
-optimal spatial bandwidth (Hs), then using these we create a LV (Local
+optimal spatial bandwidth (Hs), then using that we create a LV (Local
 Variance) image using Hs as the window size and fit a Gaussian curve to the
 histogram of the LV image to select spectral bandwidth (Hr). And minimum
 segment size (M) can be predicted from the spatial bandwidth.
+
+This approach is not without some problems. For example:
+
+1. the selection of Hs needs some work as there are still cases that I don't understand how to select the optimal parameter.
+2. Using a Gaussian curve to fit to the histogram is not ideal, but it is fast and gives a reasonable approximation in most cases.
+
+You can optionally have the code generate graphs of the curves that are being
+evaluated to select the parameters, and I recommend that you use these to
+evaluate the correctness of the parameters and to allow you to better make
+manual adjustments to the results. While I have integrated the optimal parameter
+selection into the segmentation as an option, I do not recommend using it for
+production work.
 
 As mentioned there is no optimal set of parameters that can be used globally,
 so it is important to pick and area that is representative of the search area
 when estimating the optimal parameters. You might need to breakdown the search
 area into subareas that have similar spatial characteristics.
+
