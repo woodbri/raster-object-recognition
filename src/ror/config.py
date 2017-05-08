@@ -93,7 +93,7 @@ CONFIG = {
     'naip.doqq_dir': 'data/naip/doqqs',
     'naip.shapefile': 'data/naip/shapefile',
     'naip.shptable': 'naipbbox{0}',         # {0} - year
-    'naip.sobel': True,
+    'naip.sobel': False,
 
     # ----------------- OSM building data --------------------------
 
@@ -103,17 +103,17 @@ CONFIG = {
 
     # ---------------- Segmentation paramaters ----------------------
 
-    'seg.ram': 4096,    # (int) available ram for processing in MB
-    'seg.spatialr': 16, # (int) Spatial radius of neighborhood pixels
-    'seg.ranger': 16,   # (float) Range radius in radiometry units in
+    'seg.ram': 8192,    # (int) available ram for processing in MB
+    'seg.spatialr': 16, # (int) Spatial radius (Hs) of neighborhood pixels
+    'seg.ranger': 16,   # (float) Range radius (Hr) in radiometry units in
                         # in the multi-spectral space
+    'seg.minsize': 100, # (int) minimum size of segment (M) (pixels)
+                        # smaller segments will get merged to closest
+                        # similar adjacent segment
     'seg.thresh': 0.1,  # (float) mode convergence threshold
     'seg.rangeramp': 0, # (float) ranger radius coefficient where:
                         #       y = ramgeramp*x+ranger
     'seg.max-iter': 100,# (int) max number of iterations to convergence
-    'seg.minsize': 100, # (int) minimum size of segment (pixels)
-                        # smaller segments will get merged to closest
-                        # similar adjacent segment
     'seg.tilesize': 1024,    # size of tiles used in processing
     'seg.shapedir': 'data/segments',
     'seg.table': 'segments.y{0}_{1}', # {0}= year, {1}= jobname

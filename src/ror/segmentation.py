@@ -1,13 +1,25 @@
+'''
+--------------------------------------------------------------------
+    This file is part of the raster object recognition project.
+
+    https://github.com/woodbri/raster-object-recognition
+
+    MIT License. See LICENSE file for details.
+
+    Copyright 2017, Stephen Woodbridge
+--------------------------------------------------------------------
+'''
 
 import os
 import sys
 import glob
 import re
 import getopt
-from osgeo import ogr
+from osgeo import gdal, ogr
 
 from utils import getDatabase, runCommand
 from polygonstats import PolygonStats, addShapefileStats
+from optimalparameters import getOptimalParameters
 import otbApplication
 from config import *
 
@@ -182,23 +194,190 @@ def loadsegments(fsegshp, year, job):
     runCommand(cmd, verbose)
 
 
+def UsageOP():
+    print '''
+Usage: ror_cli optimal-params options
+    [-l|--latlog lat,lon]   - center location to use
+    [-s|--size 512]         - pixel size of window to check default: 512
+    [-a|--area bbox]        - small bbox of area to check
+    [-i|--isboxy 1|0]       - are objects square|rectangle or not
+    [-b|--bands 0,1,2,4]    - which bands to use, zero based numbers
+                              default: 0,1,2,4  (R,G,B,IR)
+    [-y|--year YYYY]        - select year to process
+    [-p|--plots]            - show graph plots of data
+    [-v|--verbose]          - print debug info
+    [-h|--help]
+    '''
+    sys.exit(2)
+
+
+
+def OptimalParams( argv ):
+    try:
+        opts, args = getopt.getopt(argv, "l:s:a:i:b:y:pvh",
+            ['latlon', 'size', 'area', 'isboxy', 'bands', 'year',
+             'plots', 'verbose', 'help', 'debug'])
+    except getopt.GetoptError:
+        print 'ERROR in optimal-params options!'
+        print 'args:', argv
+        print getopt.GetoptError
+        return True
+
+    verbose   = CONFIG.get('verbose', False)
+    area      = CONFIG.get('areaOfInterest', None)
+    year      = CONFIG.get('year', None)
+    latlon    = None
+    size      = 512
+    boxy      = True
+    bands     = [0,1,2,4]
+    plotit    = False
+    debug     = False
+    error     = False
+
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            UsageOP()
+        elif opt in ('-a', '--area'):
+            area = arg
+        elif opt in ('-y', '--year'):
+            year = str(int(arg))
+        elif opt in ('-x', '--isboxy'):
+            boxy = bool(arg)
+        elif opt in ('-b', '--bands'):
+            bands = [int(i) for i in arg.split(',')]
+        elif opt in ('-l', '--latlon'):
+            latlon = [float(i) for i in arg.split(',')]
+            print 'latlon:', latlon
+        elif opt in ('-s', '--size'):
+            if int(arg) > 0:
+                size = int(arg)
+            else:
+                print "\nERROR: argument size must be > 0 !"
+                error = True
+        elif opt in ('-p', '--plot', '--plots'):
+            plotit = True
+        elif opt in ('-v', '--verbose'):
+            verbose = True
+        elif opt in ('--debug'):
+            debug = True
+
+    if year is None:
+        print "\nERROR: year is not defined!"
+        error = True
+
+    if area is None and latlon is None:
+        print "\nERROR: either area or latlon must be defined!"
+        error = True
+
+    if error:
+        return True
+
+    print 'verbose:', verbose
+    print 'debug:', debug
+
+    pid        = str(os.getpid())
+    home       = CONFIG['projectHomeDir']
+    tmpdirs    = CONFIG.get('tmpdirs', [os.path.join(home, 'tmp')])
+    tmpdir     = tmpdirs[0]
+    vrtin      = os.path.join(tmpdir, 'tmp-{}-areaofinterest.vrt'.format(pid))
+    foptimal   = os.path.join(tmpdir, 'tmp-{}-optimal.tif'.format(pid))
+
+    # if latlon then set area to bbox based on 1 meter/pixel
+    # and double that to make sure with have some extra
+    if not latlon is None:
+        dsize = size / 111120.0
+        xmin = latlon[1] - dsize
+        xmax = latlon[1] + dsize
+        ymin = latlon[0] - dsize
+        ymax = latlon[0] + dsize
+        area = "{0:.6f},{1:.6f},{2:.6f},{3:.6f}".format(xmin,ymin,xmax,ymax)
+        if debug:
+            print 'dsize:', dsize
+            print 'latlon:', latlon
+
+    if debug:
+        print 'area:', area
+
+    # get a vrt file defining the area of interest
+    createVrtForAOI( vrtin, year, area )
+
+    ds = gdal.Open( vrtin )
+    gt = ds.GetGeoTransform()
+    '''
+    gt[0] = originX
+    gt[1] = pixelWdith
+    gt[2] = 0
+    gt[3] = originY
+    gt[4] = 0
+    gt[5] = pixelHeight
+    '''
+    width = ds.RasterXSize
+    height = ds.RasterYSize
+    if min(width, height) < size:
+        size = min(width, height)
+
+    xoff = str(int((latlon[1] - gt[0]) / gt[1] - size/2))
+    yoff = str(int((latlon[0] - gt[3]) / gt[5]  - size/2))
+    size = str(int(size))
+    cmd = ['gdal_translate', '-of', 'GTiff', '-srcwin', xoff, yoff,
+           size, size, vrtin, foptimal]
+    runCommand( cmd, verbose )
+
+    opt = getOptimalParameters( boxy, foptimal, bands, verbose, False )
+
+    ds = None
+    if debug:
+        print "Leaving tmp files for {}".format( vrtin )
+    else:
+        print "Removing tmp files."
+        os.remove( vrtin )
+        if os.path.exists( vrtin + '.in' ):
+            os.remove( vrtin + '.in' )
+        os.remove( foptimal )
+        if os.path.exists( foptimal + '.aux.xml' ):
+            os.remove( foptimal + '.aux.xml' )
+        if os.path.exists( foptimal + '.msk' ):
+            os.remove( foptimal + '.msk' )
+
+    print "   Optimal Parameters    "
+    print "    |  Hs  |  Hr  |   M  "
+    print "----+------+------+------"
+    print "min |  {0:2d}  |  {1:2d}  | {2:4d} ".format(opt['hs_min'], opt['hr_min'], opt['M_min'])
+    print "max |  {0:2d}  |  {1:2d}  | {2:4d} ".format(opt['hs_max'], opt['hr_max'], opt['M_max'])
+    print "avg |  {0:2d}  |  {1:2d}  | {2:4d} ".format(opt['hs_avg'], opt['hr_avg'], opt['M_avg'])
+    print "----+------+------+------"
+
+    return False
+
+
+
 def Usage():
     print '''
 Usage: ror_cli segment options
     [-a|--area fips|bbox]   - only process this fips area or
                               xmin,ymin,xmax,ymax bbox area
     [-y|--year yyyy]        - select year to process
+    [-o|--optimal min|max|avg] - compute the optimal parameters and
+                              use them instead of -s, -r, -m
+                              select if you want the min, max, or avg
+                              of the computed values
+       [-x|--isboxy 0|1]    - are objects boxy, used with --optimal
+       [-b|--bands 0,1,2,4] - which bands to use, used iwth --optimal
     [-s|--spatialr int]     - spatial radius of neigborhood in pixels
     [-r|--ranger float]     - radiometric radius in multi-spectral space
+    [-m|--minsize int]      - minimum segment size in pixels
     [-t|--thresh float]     - convergence threshold
     [-p|--rangeramp float]  - range radius coefficient where:
                               y = rangeramp*x+ranger
     [-i|--max-iter int]     - max interation during convergence
-    [-m|--minsize int]      - minimum segment size in pixels
     [-T|--tilesize int]     - size of tiles in pixels
     [-R|--ram int(MB)]      - available ram for processing
     [-j|--job name]         - unique job name, will be used to
                               to create table to store segments in
+    NOTE: --optimal will take a 1024x1024 image located at the center
+          of --area to compute the optimal parameters. If you want more
+          control over where the the sample is selected, use option
+          optimal-params above and set -s, -r, -m explicitly
     '''
     sys.exit(2)
 
@@ -206,9 +385,10 @@ Usage: ror_cli segment options
 def Segmentation( argv ):
 
     try:
-        opts, args = getopt.getopt(argv, 'ha:y:s:r:t:i:p:m:T:R:j:',
+        opts, args = getopt.getopt(argv, 'ha:y:s:r:t:i:p:m:T:R:j:o:x:b:',
             ['help', 'area', 'year', 'spatialr', 'ranger', 'thresh',
-             'max-iter', 'rangeramp', 'minsize', 'tilesize', 'ram', 'job'])
+             'max-iter', 'rangeramp', 'minsize', 'tilesize', 'ram', 'job',
+             'optimal', 'boxy', 'bands', 'debug'])
     except getopt.GetoptError:
         print 'ERROR in Segmentation options!'
         print 'args:', argv
@@ -230,6 +410,10 @@ def Segmentation( argv ):
     tilesize  = CONFIG.get('seg.tilesize', None)
     ram       = CONFIG.get('seg.ram', None)
     job       = None
+    optimal   = None
+    boxy      = True
+    bands     = [0,1,2,4]
+    debug     = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -238,34 +422,54 @@ def Segmentation( argv ):
             area = arg
         elif opt in ('-y', '--year'):
             year = str(int(arg))
+        elif opt in ('-o', '--optimal'):
+            if arg in ('min', 'max', 'avg'):
+                optimal = arg
+            else:
+                print "\nERROR: -o|--optimal must take value of min|max|avg!"
+                Usage()
+        elif opt in ('-x', '--isboxy'):
+            boxy = bool(arg)
+        elif opt in ('-b', '--bands'):
+            bands = [int(i) for i in arg.split(',')]
         elif opt in ('-s', '--spatialr'):
             spatialr = int(arg)
         elif opt in ('-r', '--ranger'):
             ranger = float(arg)
+        elif opt in ('-m', '--minsize'):
+            minsize = int(arg)
         elif opt in ('-t', '--thresh'):
             thresh = float(arg)
         elif opt in ('-p', '--rangeramp'):
             rangeramp = float(arg)
         elif opt in ('-i', '--max-iter'):
             maxiter = int(arg)
-        elif opt in ('-m', '--minsize'):
-            minsize = int(arg)
         elif opt in ('-T', '--tilesize'):
             tilesize = int(arg)
         elif opt in ('-R', '--ram'):
             ram = int(arg)
         elif opt in ('-j', '--job'):
             job = arg
+        elif opt in ('--debug'):
+            debug = True
 
     # check all args are defined
-    chkargs = {'area':area, 'year':year, 'spatialr':spatialr, 'ranger':ranger,
-               'thresh':thresh, 'rangeramp':rangeramp, 'max-iter':maxiter,
-               'minsize':minsize, 'tilesize':tilesize, 'ram':ram, 'job':job}
+    chkargs = {'area':area, 'year':year, 'thresh':thresh,
+               'rangeramp':rangeramp, 'max-iter':maxiter,
+               'tilesize':tilesize, 'ram':ram, 'job':job}
     err = False
     for k in chkargs:
         if chkargs[k] is None:
             err = True
             print "ERROR: '{}' is not defined!".format(k)
+
+    if optimal is None:
+        chkargs = {'spatialr':spatialr, 'ranger':ranger, 'minsize':minsize}
+        for k in chkargs:
+            if chkargs[k] is None:
+                err = True
+                print "ERROR: '{}' is not defined!".format(k)
+
     if err:
         print "Please define them in the config file or as args!"
         Usage()
@@ -280,12 +484,45 @@ def Segmentation( argv ):
     fsmoothpos = os.path.join(tmpdir, 'tmp-{}-smoothpos.tif'.format(pid))
     fsegs      = os.path.join(tmpdir, 'tmp-{}-segs.tif'.format(pid))
     fmerged    = os.path.join(tmpdir, 'tmp-{}-merged.tif'.format(pid))
+    foptimal   = os.path.join(tmpdir, 'tmp-{}-optimal.tif'.format(pid))
     fsegshp    = os.path.join(home, 'data', 'year' 'segments', 'segments-{}.shp'.format(job))
 
     # TODO add timing stats
 
     # get a vrt file defining the area of interest
     createVrtForAOI( vrtin, year, area )
+
+    if not optimal is None:
+        ds = gdal.Open( vrtin )
+        width = ds.RasterXSize
+        height = ds.RasterYSize
+        size = 1024
+        if min(width, height) < size:
+            size = min(width, height)
+
+        xoff = str(int(width/2 - size/2))
+        yoff = str(int(height/2 - size/2))
+        size = str(int(size))
+        cmd = ['gdal_translate', '-of', 'GTiff', '-srcwin', xoff, yoff,
+               size, size, vrtin, foptimal]
+        runCommand( cmd, verbose )
+
+        optParams = getOptimalParameters( boxy, foptimal, bands, verbose, False )
+        spatialr = optParams['hs_' + optimal]
+        ranger   = optParams['hr_' + optimal]
+        minsize  = optParams['M_'  + optimal]
+
+        ds = None
+        if not Debug:
+            of.remove( foptimal )
+
+    if verbose:
+        print "Using segmentation parameters:"
+        print "  spatialr (hs): {}".format(spatialr)
+        print "  ranger   (hr): {}".format(ranger)
+        print "  minsize   (M): {}".format(minsize)
+
+    sys.exit(0)
 
     print 'Starting smoothing ...'
     smoothing(vrtin, fsmooth, fsmoothpos, spatialr, ranger, rangeramp, thresh, maxiter, ram)
@@ -295,7 +532,7 @@ def Segmentation( argv ):
 
     print 'Starting small area merging ...'
     mergesmall(fsmooth, fsegs, fmerged, minsize, tilesize)
-    
+
     print 'Starting vectorization of segments ...'
     vectorize(fsmooth, fmerged, fsegshp, tilesize)
 
@@ -305,8 +542,16 @@ def Segmentation( argv ):
     print 'Loading segments into database ...'
     loadsegments(fsegshp, year, job)
 
-    print 'Cleanning up tmp files ...'
-    # TODO add parameter to not do this?
+    if debug:
+        print 'Leaving tmp files in {}.'.format(tmpdir)
+    else:
+        print 'Cleanning up tmp files ...'
+        os.remove( vrtin )
+        os.remove( fsmooth )
+        os.remove( fsmoothpos )
+        os.remove( fsegs )
+        os.remove( fmerged )
+        os.remove( fsegshp )
 
     print 'Done!'
 
@@ -315,3 +560,4 @@ if __name__ == '__main__':
         Usage()
 
     Segmentation(sys.argv[1:])
+

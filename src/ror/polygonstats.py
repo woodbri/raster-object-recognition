@@ -1,4 +1,15 @@
 #!/usr/bin/env python
+'''
+--------------------------------------------------------------------
+    This file is part of the raster object recognition project.
+
+    https://github.com/woodbri/raster-object-recognition
+
+    MIT License. See LICENSE file for details.
+
+    Copyright 2017, Stephen Woodbridge
+--------------------------------------------------------------------
+'''
 
 import math
 from osgeo import ogr
@@ -75,7 +86,7 @@ class PolygonStats:
 
     def compact2(self):
         """
-        Return polyon alternate compactness metric.
+        Return polygon alternate compactness metric.
         http://en.wikipedia.org/wiki/Compactness_measure_of_a_shape
         """
         return 4.0 * math.pi * self._area / math.pow(self._perim, 2.0)
@@ -90,7 +101,7 @@ class PolygonStats:
 
     def shape(self):
         """Return polygon shape index (FRAGSTATS P2 SHAPE)
-        Based onShape Index from FRAGSTATS ver 4.2
+        Based on Shape Index from FRAGSTATS ver 4.2
         http://www.umass.edu/landeco/research/fragstats/documents/fragstats.help.4.2.pdf
         """
         return 0.25 * self._perim / math.sqrt(self._area)

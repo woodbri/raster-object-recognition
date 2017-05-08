@@ -45,20 +45,43 @@ Usage: ror_cli [-h|--help]
             [-f|--files file [file ...]] process this list of files, default
                              is all downloaded files not already processed
 
+       optimal-params    - compute the optimal paramters for segmentation
+            [-l|--latlog lat,lon]   - center location to use
+            [-s|--size 512]         - pixel size of window to check
+                                      default: 512
+            [-a|--area bbox]        - small bbox of area to check
+            [-i|--isboxy 1|0]       - are objects square|rectangle or not
+            [-b|--bands 0,1,2,4]    - which bands to use, zero based numbers
+                                      default: 0,1,2,4  (R,G,B,IR)
+            [-y|--year yyyy]        - select year to process
+            [-p|--plots]            - show graph plots of data
+            [-v|--verbose]          - print debug info
+
        segment           - segment some or all of area of interest
             [-a|--area fips|bbox]   - only process this fips area or
                                       xmin,ymin,xmax,ymax bbox area
-            [-s|--spatialr int]     - spatial radius of neigborhood in pixels
-            [-r|--ranger float]     - radiometric radius in multi-spectral space
+            [-y|--year yyyy]        - select year to process
+            [-o|--optimal min|max|avg] - compute the optimal parameters and
+                                      use them instead of -s, -r, -m
+                                      select if you want the min, max, or avg
+                                      of the computed values
+               [-x|--isboxy 0|1]    - are objects boxy, used with --optimal
+               [-b|--bands 0,1,2,4] - which bands to use, used iwth --optimal
+            [-s|--spatialr int]     - spatial radius (hs) of neigborhood in pixels
+            [-r|--ranger float]     - radiometric radius (hr) in multi-spectral space
+            [-m|--minsize int]      - minimum segment size in pixels (M)
             [-t|--thresh float]     - convergence threshold
             [-i|--max-iter int]     - max interation during convergence
             [-p|--rangeramp float]  - range radius coefficient where:
                                       y = rangeramp*x+ranger
-            [-m|--minsize int]      - minimum segment size in pixels
             [-T|--tilesize int]     - size of tiles in pixels
             [-R|--ram int(MB)]      - available ram for processing
             [-j|--job name]         - unique job name, will be used to
                                       to create table to store segments in
+            NOTE: --optimal will take a 1024x1024 image located at the center
+                  of --area to compute the optimal parameters. If you want more
+                  control over where the the sample is selected, use option
+                  optimal-params above and set -s, -r, -m explicitly
 
        train             - train some or all of training area and save data
 
@@ -86,6 +109,8 @@ def Main(argv):
         ProcessNaip(  argv[1:] )
     elif argv[0] == 'osm-buildings':
         pass
+    elif argv[0] == 'optimal-params':
+        OptimalParams( argv[1:] )
     elif argv[0] == 'segment':
         Segmentation( argv[1:] )
     elif argv[0] == 'train':

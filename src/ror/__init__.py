@@ -21,5 +21,6 @@ from fetchnaip import *
 from naipprocess import *
 from status import *
 from minboundingcircle import getCircle
-from segmentation import Segmentation
+from segmentation import Segmentation, OptimalParams
 from polygonstats import PolygonStats, addShapefileStats
+from optimalparameters import getOptimalParameters
