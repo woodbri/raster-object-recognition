@@ -36,7 +36,7 @@ or want to resolve the dependencies on your host system. See the file
 ### Docker
 
 If you don't have Docker installed on your system, then go
-[HERE](https://www.docker.com/) and find the downloads or instsrtuctions for
+[HERE](https://www.docker.com/) and find the downloads or instructions for
 your system and install the Docker runtime.
 
 There example scripts to build a Docker image and to run the Docker image in
@@ -88,4 +88,35 @@ project/
         workflow/       - scripts that perform the various steps in the workflow
 ```
 
+## Segmentation and Optimization of Parameters
 
+A key to successful segmentation is pick parameters that are best suited to the
+objects that you care about. There is no optimal parameters when you are
+considering large scale areas. For example, think about the similarities and
+differences in residential buildings, large commercial buildings, parking lots,
+agricultural farmed areas at different times in the growing cycle. These are
+might have some similar characteristics like they might be regularly shaped
+objects, might have similar reflective characteristics, like gravel roof,
+harvested dirt field plots, asphalt parking lots or roads.
+
+The optimize-params option is based on the following papers and discussions
+with the author Dr. Dongping Ming.
+
+1. "Scale parameter selection by spatial statistics for GeOBIA: Using
+mean-shift based multi-scale segmentation as an example", 2015, Dongping Ming, Jonathan Li, Junyi Wang, Min Zhang
+2. "Modified average local variance for pixel-level scale selection of multiband remote sensing images and its scale effect on image classification accuracy", 2013, Dongping Ming, Jinyang Du, Xiyu Zhang, Tiantian Liu
+3. "Modified ALV for selecting the optimal spatial resolution and its scale
+effect on image classification accuracy", 2010, Dongping Ming, Jianyu Yang, Longxiang Li, Zhuoqin Song
+4. "Modified Local Variance Based Method for Selecting the Optimal Spatial Resolution of Remote Sensing Image", 2010, Dongping Ming, Jiancheng Luo, Longxiang Li, Zhuoqin Song
+5. "Semivariogram-Based Spatial Bandwidth Selection for Remote Sensing Image Segmentation With Mean-Shift Algorithm", 2012, Dongping Ming, Tianyu Ci, Hongyue Cai, Longxiang Li, Cheng Qiao, and Jinyang Du
+
+From these papers, I decided to use the semivariogram approach to select the
+optimal spatial bandwidth (Hs), then using these we create a LV (Local
+Variance) image using Hs as the window size and fit a Gaussian curve to the
+histogram of the LV image to select spectral bandwidth (Hr). And minimum
+segment size (M) can be predicted from the spatial bandwidth.
+
+As mentioned there is no optimal set of parameters that can be used globally,
+so it is important to pick and area that is representative of the search area
+when estimating the optimal parameters. You might need to breakdown the search
+area into subareas that have similar spatial characteristics.
