@@ -33,65 +33,55 @@ def semivariogram( ds, band, lag ):
     data = band.ReadAsArray( 0, 0, width, height ).astype(np.float)
     #print 'w: {}, h: {}'.format(width, height)
 
-    '''
     # the follow is a conversion of the loops to python slices
     # to improve performace, For more information, see:
     # http://stackoverflow.com/questions/43813986/how-to-use-numpy-and-strides-to-improve-performance-of-loop
 
+    '''
     print "lag:", lag
 
     sumw = 0.0
     sumh = 0.0
     for i in range(width-lag):
         for j in range(height-lag):
-            sumw += data[i+lag,j]-data[i,j]
-            sumh += data[i,j+lag]-data[i,j]
+            sumw += (data[i+lag,j]-data[i,j])**2
+            sumh += (data[i,j+lag]-data[i,j])**2
 
     print 0, sumw, sumh
 
     sumw = 0.0
     for i in range(width-lag):
         for j in range(height-lag):
-            sumw += data[i+lag,j]-data[i,j]
+            sumw += (data[i+lag,j]-data[i,j])**2
     sumh = 0.0
     for j in range(height-lag):
         for i in range(width-lag):
-            sumh += data[i,j+lag]-data[i,j]
+            sumh += (data[i,j+lag]-data[i,j])**2
 
     print 1, sumw, sumh
 
     sumw = 0.0
     for i in range(width-lag):
         for j in range(height-lag):
-            sumw += data[lag:,:][i,j]-data[:-lag,:][i,j]
+            sumw += (data[lag:,:][i,j]-data[:-lag,:][i,j])**2
     sumh = 0.0
     for j in range(height-lag):
         for i in range(width-lag):
-            sumh += data[:,lag:][i,j]-data[:,:-lag][i,j]
+            sumh += (data[:,lag:][i,j]-data[:,:-lag][i,j])**2
 
     print 2, sumw, sumh
 
-    sumw = (data[lag:,:-lag] - data[:-lag,:-lag]).sum()
-    sumh = (data[:-lag,lag:] - data[:-lag,:-lag]).sum()
+    sumw = ((data[lag:,:-lag] - data[:-lag,:-lag])**2).sum()
+    sumh = ((data[:-lag,lag:] - data[:-lag,:-lag])**2).sum()
 
     print 3, sumw, sumh
-
-    sumw = data[lag:,:-lag].sum() - data[:-lag,:-lag].sum()
-    sumh = data[:-lag,lag:].sum() - data[:-lag,:-lag].sum()
-
-    print 4, sumw, sumh
-
-    sumw = data[-lag:,:-lag].sum() - data[:lag,:-lag].sum()
-    sumh = data[:-lag,-lag:].sum() - data[:-lag,:lag].sum()
-
-    print 5, sumw, sumh
     '''
 
-    sum_shared = data[:-lag,:-lag].sum()
-    sumw = data[lag:,:-lag].sum() - sum_shared
-    sumh = data[:-lag,lag:].sum() - sum_shared
+    shared_term = data[:-lag,:-lag]
+    sumw = ((data[lag:,:-lag] - shared_term)**2).sum()
+    sumh = ((data[:-lag,lag:] - shared_term)**2).sum()
 
-    #print 6, sumw, sumh
+    #print 4, sumw, sumh
 
     Nh2 = 2.0*(width-lag)*(height-lag)
 
