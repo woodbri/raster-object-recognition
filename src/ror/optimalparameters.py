@@ -28,16 +28,28 @@ except:
 
 
 def semivariogram( ds, band, lag ):
+    '''
+    semivariogram( ds, band, lag )
+
+    This function computes semivariance [Horizontal variance, Vertical variance,
+    Average of Horizontal and Vertical variances] of a given band in
+    the given image (ds) for the given lag.
+
+    Reference:
+    Semivariogram-Based Spatial Bandwidth Selection for Remote Sensing Image
+    Segmentation With Mean-Shift Algorithm, 2012, by Dongping Ming, Tianyu Ci,
+    Hongyue Cai, Longxiang Li, Cheng Qiao, and Jinyang Du
+
+    '''
     width = ds.RasterXSize
     height = ds.RasterYSize
     data = band.ReadAsArray( 0, 0, width, height ).astype(np.float)
-    #print 'w: {}, h: {}'.format(width, height)
 
+    '''
     # the follow is a conversion of the loops to python slices
     # to improve performace, For more information, see:
     # http://stackoverflow.com/questions/43813986/how-to-use-numpy-and-strides-to-improve-performance-of-loop
 
-    '''
     print "lag:", lag
 
     sumw = 0.0
@@ -89,9 +101,24 @@ def semivariogram( ds, band, lag ):
 
 
 def getOptimalSV( b, data, drange, verbose, plotit ):
+    '''
+    getOptimalSV( b, data, drange, verbose, plotit )
+
+        b       - band number (used for title on plots
+        data    - synthetic variance for each successive lag
+        drange  - [start, end, step] the range of lag values
+        verbose - bool flag to trigger additional prints
+        plotit  - bool flag to generate and display plots
+
+    Reference:
+    Semivariogram-Based Spatial Bandwidth Selection for Remote Sensing Image
+    Segmentation With Mean-Shift Algorithm, 2012, by Dongping Ming, Tianyu Ci,
+    Hongyue Cai, Longxiang Li, Cheng Qiao, and Jinyang Du
+
+    '''
     optw = None
     opth = None
-    opts = None
+    opta = None
     minw = None
     minh = None
     mins = None
@@ -110,8 +137,8 @@ def getOptimalSV( b, data, drange, verbose, plotit ):
             opth = i*drange[2]+drange[0]
         if minh is None or dh < minh[0]:
             minh = [dh, i*drange[2]+drange[0]]
-        if opts is None and da <= 0.0:
-            opts = i*drange[2]+drange[0]
+        if opta is None and da <= 0.0:
+            opta = i*drange[2]+drange[0]
         if mins is None or da < mins[0]:
             mins = [da, i*drange[2]+drange[0]]
 
@@ -119,8 +146,8 @@ def getOptimalSV( b, data, drange, verbose, plotit ):
         optw = minw[1]
     if opth is None and not minh is None:
         opth = minh[1]
-    if opts is None and not mins is None:
-        opts = mins[1]
+    if opta is None and not mins is None:
+        opta = mins[1]
 
     if plotit:
         x = range(drange[0], drange[1], drange[2])
@@ -131,10 +158,27 @@ def getOptimalSV( b, data, drange, verbose, plotit ):
         plt.plot(x,y,'r')
         plt.show()
 
-    return [optw, opth, opts]
+    return [optw, opth, opta]
 
 
 def getOptimalHs( ds, useBands, drange, verbose, plotit ):
+    '''
+    getOptimalHs( ds, useBands, drange, verbose, plotit )
+        ds       - gdal dataset reference for the image
+        useBands - list of bands to evaluate
+        drange   - [start, end, step] for lags to evaluate
+        verbose  - bool flag to turn on additional prints
+        plotit   - bool flag to generate and display plots
+
+    Compute the optimal spatial bandwidth based on the semivariogram
+    of the image.
+
+    Reference:
+    Semivariogram-Based Spatial Bandwidth Selection for Remote Sensing Image
+    Segmentation With Mean-Shift Algorithm, 2012, by Dongping Ming, Tianyu Ci,
+    Hongyue Cai, Longxiang Li, Cheng Qiao, and Jinyang Du
+
+    '''
     data = []
     opt_hs = []
 
@@ -184,6 +228,25 @@ def getOptimalHs( ds, useBands, drange, verbose, plotit ):
 
 
 def getOptimalHr( ds, useBands, winsize, verbose, plotit ):
+    '''
+    getOptimalHr( ds, useBands, winsize, verbose, plotit )
+        ds       - gdal dataset image reference
+        useBands - list of bands to consider
+        winsize  - window size for local variance
+        verbose  - bool flag to print messages
+        plotit   - bool flag to generate and show plots
+
+    Compute the optimal spectral resolution for the given windsize
+    that was returned from getOptimalHs function. This is done by
+    create a local variance (LV) image derived from the image (ds)
+    and then fitting a curve through the histogram of the LV image.
+
+    Reference:
+    Scale parameter selection by spatial statistics for GeOBIA: Using
+    mean-shift based multi-scale segmentation as an example, 2015,
+    Dongping Ming, Jonathan Li, Junyi Wang, Min Zhang
+
+    '''
 
     opt_hr = []
 
@@ -246,6 +309,22 @@ def getOptimalHr( ds, useBands, winsize, verbose, plotit ):
 
 
 def getOptimalParameters( boxy, infile, useBands, verbose, plotit ):
+    '''
+    getOptimalParameters( boxy, infile, useBands, verbose, plotit )
+        boxy     - bool flag if segments are boxy (square or rectangle)
+        infile   - name of input file to evaluate
+        useBands - list of bands to consider
+        verbose  - bool flag to print messages
+        plotit   - bool flag t0 generate and display plots
+
+    returns a dictionary of results with keys for:
+        hs_min, hs_max, hs_avg - spatial resolution
+        hr_min, hr_max, hr_avg - spectral resolution
+        M_min, M_max, M_avg    - minimum segment size
+
+    Main public interface that evaluates an image and reports the optimal
+    parameters for mean-shift segmentation.
+    '''
     if plotit:
         import matplotlib.pyplot as plt
         import matplotlib.mlab as mlab
@@ -299,9 +378,12 @@ def Main( argv ):
     area = None
 
     try:
-        opts, args = getopt.getopt(argv, "hif:i:b:pv", ['help', 'file', 'isboxy', 'bands', 'plots', 'verbose'])
+        opts, args = getopt.getopt(argv, "hf:i:b:pv", ['help', 'file', 'isboxy', 'bands', 'plots', 'verbose'])
     except:
         Usage()
+
+    #print 'opts:', opts
+    #print 'args:', args
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -309,7 +391,7 @@ def Main( argv ):
         elif opt in ('-f', '--file'):
             infile = arg
         elif opt in ('-i', '--isboxy'):
-            boxy = bool(arg)
+            boxy = arg != '0'
         elif opt in ('-b', '--bands'):
             bands = [int(i) for i in arg.split(',')]
         elif opt in ('-p', '--plot', '--plots'):

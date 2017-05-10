@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 --------------------------------------------------------------------
     This file is part of the raster object recognition project.
@@ -241,8 +242,8 @@ def OptimalParams( argv ):
             area = arg
         elif opt in ('-y', '--year'):
             year = str(int(arg))
-        elif opt in ('-x', '--isboxy'):
-            boxy = bool(arg)
+        elif opt in ('-i', '--isboxy'):
+            boxy = arg != '0'
         elif opt in ('-b', '--bands'):
             bands = [int(i) for i in arg.split(',')]
         elif opt in ('-l', '--latlon'):
@@ -354,6 +355,8 @@ def OptimalParams( argv ):
 def Usage():
     print '''
 Usage: ror_cli segment options
+    [-f|--file infile]      - optional infile to use instead of area and year
+                              segments are NOT load into the database
     [-a|--area fips|bbox]   - only process this fips area or
                               xmin,ymin,xmax,ymax bbox area
     [-y|--year yyyy]        - select year to process
@@ -383,10 +386,14 @@ Usage: ror_cli segment options
 
 
 def Segmentation( argv ):
+    '''
+    Segmentation( argv )
 
+    Public interface called by ror_cli.py
+    '''
     try:
-        opts, args = getopt.getopt(argv, 'ha:y:s:r:t:i:p:m:T:R:j:o:x:b:',
-            ['help', 'area', 'year', 'spatialr', 'ranger', 'thresh',
+        opts, args = getopt.getopt(argv, 'hf:a:y:s:r:t:i:p:m:T:R:j:o:x:b:',
+            ['help', 'file', 'area', 'year', 'spatialr', 'ranger', 'thresh',
              'max-iter', 'rangeramp', 'minsize', 'tilesize', 'ram', 'job',
              'optimal', 'boxy', 'bands', 'debug'])
     except getopt.GetoptError:
@@ -409,6 +416,7 @@ def Segmentation( argv ):
     minsize   = CONFIG.get('seg.minsize', None)
     tilesize  = CONFIG.get('seg.tilesize', None)
     ram       = CONFIG.get('seg.ram', None)
+    infile    = None
     job       = None
     optimal   = None
     boxy      = True
@@ -418,6 +426,8 @@ def Segmentation( argv ):
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             Usage()
+        elif opt in ('-f', '--file'):
+            infile = arg
         elif opt in ('-a', '--area'):
             area = arg
         elif opt in ('-y', '--year'):
@@ -429,7 +439,7 @@ def Segmentation( argv ):
                 print "\nERROR: -o|--optimal must take value of min|max|avg!"
                 Usage()
         elif opt in ('-x', '--isboxy'):
-            boxy = bool(arg)
+            boxy = arg != '0'
         elif opt in ('-b', '--bands'):
             bands = [int(i) for i in arg.split(',')]
         elif opt in ('-s', '--spatialr'):
@@ -454,9 +464,12 @@ def Segmentation( argv ):
             debug = True
 
     # check all args are defined
-    chkargs = {'area':area, 'year':year, 'thresh':thresh,
-               'rangeramp':rangeramp, 'max-iter':maxiter,
-               'tilesize':tilesize, 'ram':ram, 'job':job}
+    chkargs = { 'thresh':thresh, 'rangeramp':rangeramp, 'max-iter':maxiter,
+               'tilesize':tilesize, 'ram':ram }
+
+    if infile is None:
+        chkargs = chkargs + { 'area':area, 'year':year, 'job':job }
+
     err = False
     for k in chkargs:
         if chkargs[k] is None:
@@ -485,13 +498,22 @@ def Segmentation( argv ):
     fsegs      = os.path.join(tmpdir, 'tmp-{}-segs.tif'.format(pid))
     fmerged    = os.path.join(tmpdir, 'tmp-{}-merged.tif'.format(pid))
     foptimal   = os.path.join(tmpdir, 'tmp-{}-optimal.tif'.format(pid))
-    fsegshp    = os.path.join(home, 'data', 'year' 'segments', 'segments-{}.shp'.format(job))
+    fsegshp    = os.path.join(home, 'data', year, 'segments', 'segments-{}.shp'.format(job))
 
     # TODO add timing stats
 
-    # get a vrt file defining the area of interest
-    createVrtForAOI( vrtin, year, area )
+    if infile is None:
+        # get a vrt file defining the area of interest
+        createVrtForAOI( vrtin, year, area )
+    else:
+        vrtin = infile
+        fsegshp    = os.path.join(tmpdir, 'tmp-{}-segments.shp'.format(pid))
 
+    # make sure path exists for shapefiles
+    if not os.path.exists( os.path.dirname( fsegshp ) ):
+        os.makedirs( os.path.dirname( fsegshp ) )
+
+    # get the optimal segmentation parameters is requested
     if not optimal is None:
         ds = gdal.Open( vrtin )
         width = ds.RasterXSize
@@ -513,7 +535,7 @@ def Segmentation( argv ):
         minsize  = optParams['M_'  + optimal]
 
         ds = None
-        if not Debug:
+        if not debug:
             of.remove( foptimal )
 
     if verbose:
@@ -521,8 +543,6 @@ def Segmentation( argv ):
         print "  spatialr (hs): {}".format(spatialr)
         print "  ranger   (hr): {}".format(ranger)
         print "  minsize   (M): {}".format(minsize)
-
-    sys.exit(0)
 
     print 'Starting smoothing ...'
     smoothing(vrtin, fsmooth, fsmoothpos, spatialr, ranger, rangeramp, thresh, maxiter, ram)
@@ -539,14 +559,16 @@ def Segmentation( argv ):
     print 'Adding stats to vectors ...'
     addShapefileStats(fsegshp)
 
-    print 'Loading segments into database ...'
-    loadsegments(fsegshp, year, job)
+    if infile is None:
+        print 'Loading segments into database ...'
+        loadsegments(fsegshp, year, job)
 
     if debug:
         print 'Leaving tmp files in {}.'.format(tmpdir)
     else:
         print 'Cleanning up tmp files ...'
-        os.remove( vrtin )
+        if infile is None:
+            os.remove( vrtin )
         os.remove( fsmooth )
         os.remove( fsmoothpos )
         os.remove( fsegs )
