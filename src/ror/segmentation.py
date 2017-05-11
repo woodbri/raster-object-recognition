@@ -107,6 +107,9 @@ def createVrtForAOI( fvrt, year, area ):
     # temp file to write doqqs into
     fvrtin = fvrt + '.in'
 
+    # temp file for intermeadiate vrt
+    fvrtvrt = fvrt + '.vrt'
+
     # get a list of doqqs the intersect our area of interest
     # and write them to a temp file
     files = getDoqqsForArea( year, area )
@@ -115,7 +118,13 @@ def createVrtForAOI( fvrt, year, area ):
         fh.write( f + "\n" )
     fh.close()
 
-    cmd = ['gdalbuildvrt', '-input_file_list', fvrtin, fvrt]
+    # create the intermeadiate vrt file
+    cmd = ['gdalbuildvrt', '-input_file_list', fvrtin, fvrtvrt]
+    runCommand(cmd, verbose)
+
+    # create the final vrt file with appropriate mask band defined
+    cmd = ['gdal_translate', '-b', '1', '-b', '2', '-b', '3', '-b', '5',
+           '-mask', '4', '-of', 'VRT', fvrtvrt, fvrt]
     runCommand(cmd, verbose)
 
 
