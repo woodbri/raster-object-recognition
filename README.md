@@ -116,10 +116,16 @@ Variance) image using Hs as the window size and fit a Gaussian curve to the
 histogram of the LV image to select spectral bandwidth (Hr). And minimum
 segment size (M) can be predicted from the spatial bandwidth.
 
-This approach is not without some problems. For example:
+This approach is not without some problems. For example, using a Gaussian curve
+to fit to the histogram is not ideal, but it is fast and gives a reasonable
+approximation in most cases. But this does give reasonable parameters for a
+starting place for parameter evaluation.
 
-1. the selection of Hs needs some work as there are still cases that I don't understand how to select the optimal parameter.
-2. Using a Gaussian curve to fit to the histogram is not ideal, but it is fast and gives a reasonable approximation in most cases.
+I would recommend computing the parameters on a 512x512 image, then segmenting
+that image using those parameters. Pick you image area as representitive to
+your area of interest. Check the segmentation and lower or raise the valued
+based on wheter the image was over or under segmentized, and repeat. I was able
+to come up with a reasonable value in a few iterations.
 
 You can optionally have the code generate graphs of the curves that are being
 evaluated to select the parameters, and I recommend that you use these to

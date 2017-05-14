@@ -70,6 +70,8 @@ Usage: ror_cli [-h|--help]
             [-s|--spatialr int]     - spatial radius (hs) of neigborhood in pixels
             [-r|--ranger float]     - radiometric radius (hr) in multi-spectral space
             [-m|--minsize int]      - minimum segment size in pixels (M)
+            [-d|--delete]           - delete segments smaller than minsize,
+                                      otherwise merge them
             [-t|--thresh float]     - convergence threshold
             [-i|--max-iter int]     - max interation during convergence
             [-p|--rangeramp float]  - range radius coefficient where:

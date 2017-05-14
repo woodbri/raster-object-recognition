@@ -143,7 +143,7 @@ def smoothing(fin, fout, foutpos, spatialr, ranger, rangeramp, thres, maxiter, r
     app.ExecuteAndWriteOutput()
 
 
-def segmentit(fin, finpos, fout, spatialr, ranger, tilesize, tmpdir):
+def segmentit(fin, finpos, fout, spatialr, ranger, minsize, tilesize, tmpdir):
     debug = CONFIG.get('debug', False)
 
     app = otbApplication.Registry.CreateApplication('LSMSSegmentation')
@@ -153,7 +153,7 @@ def segmentit(fin, finpos, fout, spatialr, ranger, tilesize, tmpdir):
     app.SetParameterString('tmpdir', tmpdir)
     app.SetParameterInt('spatialr', spatialr)
     app.SetParameterFloat('ranger', ranger)
-    app.SetParameterInt('minsize', 0)
+    app.SetParameterInt('minsize', minsize)
     app.SetParameterInt('tilesizex', tilesize)
     app.SetParameterInt('tilesizey', tilesize)
     app.SetParameterInt('cleanup', 1 if debug else 0)
@@ -378,6 +378,8 @@ Usage: ror_cli segment options
     [-s|--spatialr int]     - spatial radius of neigborhood in pixels
     [-r|--ranger float]     - radiometric radius in multi-spectral space
     [-m|--minsize int]      - minimum segment size in pixels
+    [-d|--delete]           - delete segments smaller than minsize,
+                              otherwise they will be merged
     [-t|--thresh float]     - convergence threshold
     [-p|--rangeramp float]  - range radius coefficient where:
                               y = rangeramp*x+ranger
@@ -401,10 +403,10 @@ def Segmentation( argv ):
     Public interface called by ror_cli.py
     '''
     try:
-        opts, args = getopt.getopt(argv, 'hf:a:y:s:r:t:i:p:m:T:R:j:o:x:b:',
+        opts, args = getopt.getopt(argv, 'hf:a:y:s:r:t:i:p:m:dT:R:j:o:x:b:',
             ['help', 'file', 'area', 'year', 'spatialr', 'ranger', 'thresh',
-             'max-iter', 'rangeramp', 'minsize', 'tilesize', 'ram', 'job',
-             'optimal', 'boxy', 'bands', 'debug'])
+             'max-iter', 'rangeramp', 'minsize', 'delete', 'tilesize', 'ram',
+             'job', 'optimal', 'boxy', 'bands', 'debug'])
     except getopt.GetoptError:
         print 'ERROR in Segmentation options!'
         print 'args:', argv
@@ -431,6 +433,7 @@ def Segmentation( argv ):
     boxy      = True
     bands     = [0,1,2,4]
     debug     = False
+    delete    = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -457,6 +460,8 @@ def Segmentation( argv ):
             ranger = float(arg)
         elif opt in ('-m', '--minsize'):
             minsize = int(arg)
+        elif opt in ('-d', '--delete'):
+            delete = True
         elif opt in ('-t', '--thresh'):
             thresh = float(arg)
         elif opt in ('-p', '--rangeramp'):
@@ -556,11 +561,18 @@ def Segmentation( argv ):
     print 'Starting smoothing ...'
     smoothing(vrtin, fsmooth, fsmoothpos, spatialr, ranger, rangeramp, thresh, maxiter, ram)
 
+    if delete:
+        minsize1 = minsize
+        fsegs = fmerged
+    else:
+        minsize1 = 0
+
     print 'Starting Segmentation ...'
-    segmentit(fsmooth, fsmoothpos, fsegs, spatialr, ranger, tilesize, tmpdir)
+    segmentit(fsmooth, fsmoothpos, fsegs, spatialr, ranger, minsize1, tilesize, tmpdir)
 
     print 'Starting small area merging ...'
-    mergesmall(fsmooth, fsegs, fmerged, minsize, tilesize)
+    if not delete:
+        mergesmall(fsmooth, fsegs, fmerged, minsize, tilesize)
 
     print 'Starting vectorization of segments ...'
     vectorize(fsmooth, fmerged, fsegshp, tilesize)
@@ -581,7 +593,8 @@ def Segmentation( argv ):
         os.remove( fsmooth )
         os.remove( fsmoothpos )
         os.remove( fsegs )
-        os.remove( fmerged )
+        if not delete:
+            os.remove( fmerged )
         os.remove( fsegshp )
 
     print 'Done!'
