@@ -41,7 +41,6 @@ Usage: ror_cli [-h|--help]
             [-y|--year year] - naip year, defaults to config year
             [-n|-nproc n]    - num of process, defaults to config or 1, 0=all
             [-l|--limit n]   - limit number of files to process (for debugging)
-            [-s|-sobel]      - invert the configured sobel setting
             [-f|--files file [file ...]] process this list of files, default
                              is all downloaded files not already processed
 

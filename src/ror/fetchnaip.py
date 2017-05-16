@@ -54,7 +54,7 @@ def getLoadNaipShp(year, allStates):
 
     zipfile = r'.*\.zip$'
     table = CONFIG.get('naip.shptable', 'naip.naipbbox{0}')
-    loadZippedShape( table.format(year), shpdir, zipfile )
+    loadZippedShape( table.format(year), shpdir, zipfile, 'PROMOTE_TO_MULTI' )
 
 
 
@@ -77,7 +77,7 @@ def getNaipFiles(year, areaOfInterest, donaip):
         template = ''
 
     if template == '':
-        print 'ERROR: CONFIG[naip.url][doqq.urls][%] is not configured!' % (year)
+        print 'ERROR: CONFIG[naip.url][doqq.urls][{}] is not configured!'.format(year)
         conn.close()
         return True
 

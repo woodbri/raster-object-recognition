@@ -12,7 +12,6 @@
 
 import sys
 import psycopg2
-#from config import *
 
 CONFIG = {
     # set verbose for debugging
@@ -30,6 +29,7 @@ CONFIG = {
     'dbuser': 'postgres',
     'dbhost': 'localhost',
     'dbport': '5435',
+    #'dbport': '5432',
     'dbpass': '',
 
     # set the number of cpu's to use for processing
@@ -93,7 +93,6 @@ CONFIG = {
     'naip.doqq_dir': 'data/naip/doqqs',
     'naip.shapefile': 'data/naip/shapefile',
     'naip.shptable': 'naipbbox{0}',         # {0} - year
-    'naip.sobel': False,
 
     # ----------------- OSM building data --------------------------
 

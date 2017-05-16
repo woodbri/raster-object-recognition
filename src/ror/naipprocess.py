@@ -75,31 +75,7 @@ def createVRT(vrtfile, bands):
 
         
 
-def makeSobel(infile, outfile):
-    from skimage import io
-    from skimage.color import rgb2gray
-    try:
-        from skimage import filters
-    except:
-        from skimage import filter as filters
-
-    ds = gdal.Open( infile )
-    gt = ds.GetGeoTransform()
-    srs = ds.GetProjectionRef()
-
-    grey = io.imread( infile, as_grey=True )
-    im_sobel = filters.sobel( grey )
-    io.imsave( outfile, im_sobel )
-
-    sb_ds = gdal.Open( outfile, gdal.GA_Update )
-    sb_ds.SetGeoTransform( gt )
-    sb_ds.SetProjection( srs )
-    sb_ds = None
-    ds = None
-    
-
-
-def processDOQQ(row, procn, year, sobel):
+def processDOQQ(row, procn, year):
 
     outSrs = CONFIG.get('naip.projection', 'EPSG:4326')
 
@@ -151,42 +127,29 @@ def processDOQQ(row, procn, year, sobel):
     runCommand( cmd, verbose )
     '''
 
-    if sobel:
-        # create a gray scale and sobel image
-        makeSobel( f_source, tempfile1 )
-
-        # gdalwarp sobel to outSrs
-        cmd = ['gdalwarp', '-t_srs', outSrs, '-dstalpha',
-               '-co', 'TILED=YES', tempfile1, tempfile2]
-        runCommand( cmd, verbose )
-        os.remove( tempfile1 )
-
     # gdalwarp source file to outSrs
     cmd = ['gdalwarp', '-t_srs', outSrs, '-dstalpha', '-co', 'TILED=YES',
            f_source, tempfile1]
     runCommand( cmd, verbose )
 
-    if sobel:
-        # create a vrt R, G, B, IR, sobel, alpha
-        # a band=[file, band, colorinterp]
-        vrtfile = tempfile2.replace('.tif', '.vrt')
-        bands = [ [tempfile1, 1, 'Red'],
-                  [tempfile1, 2, 'Green'],
-                  [tempfile1, 3, 'Blue'],
-                  [tempfile1, 5, 'Alpha'],  # Alpha band
-                  [tempfile1, 4, 'Gray'],   # IR band
-                  [tempfile2, 1, 'Gray'],   # Sobel band to add
-                ]
-            
-        createVRT( vrtfile, bands )
-    else:
-        vrtfile = tempfile1
+    vrtfile = tempfile2.replace('.tif', '.vrt')
+    bands = [ [tempfile1, 1, 'Red'],
+              [tempfile1, 2, 'Green'],
+              [tempfile1, 3, 'Blue'],
+              [tempfile1, 5, 'Alpha'],  # Alpha band
+              [tempfile1, 4, 'Gray'],   # IR band
+            ]
+        
+    createVRT( vrtfile, bands )
+    mask = 4
 
+    if verbose:
+        print "vrtfile:", vrtfile, "f_target:", f_target
 
     # gdal_translate jpeg compress it to target
     cmd = ['gdal_translate', '-co', 'TILED=YES', '-co', 'JPEG_QUALITY=90',
-           '-co', 'COMPRESS=JPEG', '-co', 'INTERLEAVE=BAND', '-mask', '6',
-           '-co', 'PHOTOMETRIC=RGB', '-co', 'ALPHA=YES',
+           '-co', 'COMPRESS=JPEG', '-co', 'INTERLEAVE=BAND',
+           '-mask', str(mask), '-co', 'ALPHA=YES',
            '--config', 'GDAL_TIFF_INTERNAL_MASK', 'YES', vrtfile, f_target]
     runCommand( cmd, verbose )
 
@@ -200,14 +163,15 @@ def processDOQQ(row, procn, year, sobel):
     if verbose:
         print "rm {}".format( rmglob )
 
-    for f in glob.glob( rmglob ):
-        os.remove( f )
+    if True:
+        for f in glob.glob( rmglob ):
+            os.remove( f )
 
     return True
 
 
 
-def processNaipFromQuery(nproc, procn, limit, year, sobel):
+def processNaipFromQuery(nproc, procn, limit, year):
     conn, cur = getDatabase()
     verbose = CONFIG.get('verbose', False)
 
@@ -238,7 +202,7 @@ def processNaipFromQuery(nproc, procn, limit, year, sobel):
         print 'proc: {}, count: {}'.format(procn, len(rows))
 
     for row in rows:
-        if processDOQQ( row, procn, year, sobel ):
+        if processDOQQ( row, procn, year ):
             sql = 'update naipfetched{0} set processed=true where gid={1}'.format(year, row[1])
             cur.execute( sql )
 
@@ -247,7 +211,7 @@ def processNaipFromQuery(nproc, procn, limit, year, sobel):
 
 
 
-def processNaipFromList(files, procn, year, sobel):
+def processNaipFromList(files, procn, year):
     conn, cur = getDatabase()
     table = CONFIG['naip.shptable'].format(year)
 
@@ -262,7 +226,7 @@ def processNaipFromList(files, procn, year, sobel):
         rows = cur.fetchall()
 
         for row in rows:
-            if processDOQQ( row, procn, year, sobel ):
+            if processDOQQ( row, procn, year ):
                 sql = 'update naipfetched{0} set processed=true where gid={1}'.format(year, row[1])
                 cur.execute( sql )
 
@@ -273,7 +237,7 @@ def processNaipFromList(files, procn, year, sobel):
 
 def ProcessNaip( argv ):
     try:
-        opts, args = getopt.getopt(argv, "y:n:l:sf", ['year', 'nproc', 'limit','sobel', 'files'])
+        opts, args = getopt.getopt(argv, "y:n:l:f", ['year', 'nproc', 'limit', 'files'])
     except:
         return True # error occurred
 
@@ -281,7 +245,6 @@ def ProcessNaip( argv ):
     year = CONFIG['year']
     nproc = CONFIG.get('nproc', 1)
     limit = 0
-    sobel = CONFIG.get('naip.sobel', False)
     dofiles = False
 
     for opt, arg in opts:
@@ -291,8 +254,6 @@ def ProcessNaip( argv ):
             nproc = int(arg)
         elif opt in ('-l', '--limit'):
             limit = int(arg)
-        elif opt in ('-s', '--sobel'):
-            sobel = not sobel
         elif opt in ('-f', '--files'):
             dofiles = True
 
@@ -320,7 +281,6 @@ def ProcessNaip( argv ):
         print '----------------------------------'
         print 'NAIP year: {}'.format(year)
         print 'Num Procs: {}'.format(nproc)
-        print 'Adding Sobel band: {}'.format(sobel)
         if limit > 0:
             print 'Limit: {}'.format(limit)
         if dofiles:
@@ -340,7 +300,7 @@ def ProcessNaip( argv ):
 
         for m in range(nproc):
             p = Process( target=processNaipFromList,
-                         args=(args[m*n:(m+1)*n], m, year, sobel) )
+                         args=(args[m*n:(m+1)*n], m, year) )
             p.start()
             processes.append(p)
 
@@ -349,7 +309,7 @@ def ProcessNaip( argv ):
 
         for m in range(nproc):
             p = Process( target=processNaipFromQuery,
-                         args=(nproc, m, limit, year, sobel) )
+                         args=(nproc, m, limit, year) )
             p.start()
             processes.append(p)
 

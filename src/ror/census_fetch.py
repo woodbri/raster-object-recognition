@@ -44,10 +44,10 @@ def CensusFetch():
                '-N', '-nv', '-nd', '-nH', '-P', outdir, url]
         if verbose:
             print ' '.join(cmd)
-        #subprocess.call(cmd)
+        subprocess.call(cmd)
 
         zipfile = r'.*_county\.zip$'
-        loadZippedShape( 'census.county', outdir, zipfile )
+        loadZippedShape( 'census.county', outdir, zipfile, 'PROMOTE_TO_MULTI' )
 
 
     # -------------- deal with area of interest ------------------------
@@ -89,10 +89,10 @@ def CensusFetch():
                    '-N', '-nv', '-nd', '-nH', '-P', outdir, url + fzip]
             if verbose:
                 print ' '.join(cmd)
-            #subprocess.call(cmd)
+            subprocess.call(cmd)
 
         zipfile = r'.*_cousub\.zip$'
-        loadZippedShape( 'census.cousub', outdir, zipfile )
+        loadZippedShape( 'census.cousub', outdir, zipfile, 'PROMOTE_TO_MULTI' )
 
 
     # -------------- fetch roads data -----------------------------------
@@ -106,9 +106,9 @@ def CensusFetch():
                    '-N', '-nv', '-nd', '-nH', '-P', outdir, url + fzip]
             if verbose:
                 print ' '.join(cmd)
-            #subprocess.call(cmd)
+            subprocess.call(cmd)
 
         zipfile = r'.*_roads\.zip$'
-        loadZippedShape( 'census.roads', outdir, zipfile )
+        loadZippedShape( 'census.roads', outdir, zipfile, 'MULTILINESTRING' )
 
 

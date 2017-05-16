@@ -149,7 +149,7 @@ def getStatesCountiesFromBbox( cur, bbox ):
     return (states, counties)
 
 
-def loadZippedShape( table, path, re_zipfile ):
+def loadZippedShape( table, path, re_zipfile, geomType ):
     # create a tmp dir
     tmp = os.path.join( CONFIG.get('tmpdir', path), 'tmp-'+str(os.getpid()) )
     if not os.path.exists( tmp ):
@@ -185,7 +185,7 @@ def loadZippedShape( table, path, re_zipfile ):
                     if not re.match( r'.*.shp$', shpfile ): continue
                     # ogr2ogr to load it
                     cmd = ['ogr2ogr', '-t_srs', 'EPSG:4326', '-nln', table,
-                           '-nlt', 'PROMOTE_TO_MULTI',
+                           '-nlt', geomType,
                            '-f', 'PostgreSQL'] + ogr_opts + \
                            [ dsn, os.path.join( root2, shpfile) ]
                     if verbose:

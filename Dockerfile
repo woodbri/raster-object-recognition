@@ -48,6 +48,7 @@ RUN apt-get -qqy update &&\
           rasterio \
           sudo \
           vim \
+          wget \
           && \
         apt-get clean && \
         rm -rf /var/lib/apt/lists/* && \
