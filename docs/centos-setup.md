@@ -1,6 +1,6 @@
 # CentOS Setup
 
-#```
+```
 
 USER=fluffybunny
 
@@ -96,5 +96,5 @@ cat ror/config.py
 # don't have mapping tools integrated with this yet
 # more work for the weary.
 
-#```
+```
 
