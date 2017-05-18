@@ -63,7 +63,7 @@ mkdir -p /u/ror/buildings
 chown -R $USER.$USER /u
 
 
-# login as regular user (woodbri)
+# login as regular user ($USER)
 
 git clone https://github.com/woodbri/raster-object-recognition.git
 cd raster-object-recognition
