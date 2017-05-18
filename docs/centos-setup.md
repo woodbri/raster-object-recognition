@@ -87,7 +87,7 @@ cat ror/config.py
 ./ror_cli.py naip-process -n 56         # process the raw naip files
 
 # compute and display optimal parameters at this location
-./ror_cli.py optimal-params -l 33.9062463,-118.3437712 -b
+./ror_cli.py optimal-params -l 33.9062463,-118.3437712
 
 # run the segmentation for all of inglewood (run for 4 days)
 ./ror_cli.py segment -a 0603791400 -y 2014 -s 24 -r 36 -m 128 -d -R 102400 -j ingelwood1
