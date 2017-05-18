@@ -482,7 +482,7 @@ def Segmentation( argv ):
                'tilesize':tilesize, 'ram':ram }
 
     if infile is None:
-        chkargs = chkargs + { 'area':area, 'year':year, 'job':job }
+        chkargs.update({ 'area':area, 'year':year, 'job':job })
 
     err = False
     for k in chkargs:
