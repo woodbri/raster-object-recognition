@@ -14,6 +14,7 @@
 import os
 import sys
 import glob
+import time
 import re
 import getopt
 from osgeo import gdal, ogr
@@ -388,6 +389,8 @@ Usage: ror_cli segment options
     [-R|--ram int(MB)]      - available ram for processing
     [-j|--job name]         - unique job name, will be used to
                               to create table to store segments in
+    [--debug]               - do not remove tmp files
+    [--usetif]              - convert input vrt to tif
     NOTE: --optimal will take a 1024x1024 image located at the center
           of --area to compute the optimal parameters. If you want more
           control over where the the sample is selected, use option
@@ -402,11 +405,12 @@ def Segmentation( argv ):
 
     Public interface called by ror_cli.py
     '''
+    startTime = time.time()
     try:
         opts, args = getopt.getopt(argv, 'hf:a:y:s:r:t:i:p:m:dT:R:j:o:x:b:',
             ['help', 'file', 'area', 'year', 'spatialr', 'ranger', 'thresh',
              'max-iter', 'rangeramp', 'minsize', 'delete', 'tilesize', 'ram',
-             'job', 'optimal', 'boxy', 'bands', 'debug'])
+             'job', 'optimal', 'boxy', 'bands', 'debug', 'usetif'])
     except getopt.GetoptError:
         print 'ERROR in Segmentation options!'
         print 'args:', argv
@@ -434,6 +438,7 @@ def Segmentation( argv ):
     bands     = [0,1,2,4]
     debug     = False
     delete    = False
+    usetif    = False
 
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -476,6 +481,8 @@ def Segmentation( argv ):
             job = arg
         elif opt in ('--debug'):
             debug = True
+        elif opt in ('--usetif'):
+            usetif = True
 
     # check all args are defined
     chkargs = { 'thresh':thresh, 'rangeramp':rangeramp, 'max-iter':maxiter,
@@ -507,6 +514,7 @@ def Segmentation( argv ):
     tmpdirs    = CONFIG.get('tmpdirs', [os.path.join(home, 'tmp')])
     tmpdir     = tmpdirs[0]
     vrtin      = os.path.join(tmpdir, 'tmp-{}-areaofinterest.vrt'.format(pid))
+    tifin      = os.path.join(tmpdir, 'tmp-{}-areaofinterest.tif'.format(pid))
     fsmooth    = os.path.join(tmpdir, 'tmp-{}-smooth.tif'.format(pid))
     fsmoothpos = os.path.join(tmpdir, 'tmp-{}-smoothpos.tif'.format(pid))
     fsegs      = os.path.join(tmpdir, 'tmp-{}-segs.tif'.format(pid))
@@ -514,7 +522,9 @@ def Segmentation( argv ):
     foptimal   = os.path.join(tmpdir, 'tmp-{}-optimal.tif'.format(pid))
     fsegshp    = os.path.join(home, 'data', year, 'segments', 'segments-{}.shp'.format(job))
 
-    # TODO add timing stats
+    t0 = time.time()
+    print "Setup time:", t0 - startTime
+
 
     if infile is None:
         # get a vrt file defining the area of interest
@@ -522,6 +532,16 @@ def Segmentation( argv ):
     else:
         vrtin = infile
         fsegshp    = os.path.join(tmpdir, 'tmp-{}-segments.shp'.format(pid))
+
+    if usetif:
+        if vrtin[-3:] == 'vrt':
+            cmd = ['gdal_translate', vrtin, tifin]
+            runCommand( cmd, verbose )
+            (vrtin, tifin) = (tifin, vrtin)
+
+    t1 = time.time()
+    print "Get AOI time:", t1 - t0
+    t0 = t1
 
     # make sure path exists for shapefiles
     if not os.path.exists( os.path.dirname( fsegshp ) ):
@@ -552,6 +572,10 @@ def Segmentation( argv ):
         if not debug:
             of.remove( foptimal )
 
+        t1 = time.time()
+        print "Get optimal time:", t1 - t0
+        t0 = t1
+
     if verbose:
         print "Using segmentation parameters:"
         print "  spatialr (hs): {}".format(spatialr)
@@ -560,6 +584,10 @@ def Segmentation( argv ):
 
     print 'Starting smoothing ...'
     smoothing(vrtin, fsmooth, fsmoothpos, spatialr, ranger, rangeramp, thresh, maxiter, ram)
+
+    t1 = time.time()
+    print "Smoothing time:", t1 - t0
+    t0 = t1
 
     if delete:
         minsize1 = minsize
@@ -570,19 +598,39 @@ def Segmentation( argv ):
     print 'Starting Segmentation ...'
     segmentit(fsmooth, fsmoothpos, fsegs, spatialr, ranger, minsize1, tilesize, tmpdir)
 
+    t1 = time.time()
+    print "Segmentation time:", t1 - t0
+    t0 = t1
+
     print 'Starting small area merging ...'
     if not delete:
         mergesmall(fsmooth, fsegs, fmerged, minsize, tilesize)
 
+        t1 = time.time()
+        print "Merge small area time:", t1 - t0
+        t0 = t1
+
     print 'Starting vectorization of segments ...'
     vectorize(fsmooth, fmerged, fsegshp, tilesize)
+
+    t1 = time.time()
+    print "Vectoriztion time:", t1 - t0
+    t0 = t1
 
     print 'Adding stats to vectors ...'
     addShapefileStats(fsegshp)
 
+    t1 = time.time()
+    print "Add polygon stats time:", t1 - t0
+    t0 = t1
+
     if infile is None:
         print 'Loading segments into database ...'
         loadsegments(fsegshp, year, job)
+
+        t1 = time.time()
+        print "Load segments time:", t1 - t0
+        t0 = t1
 
     if debug:
         print 'Leaving tmp files in {}.'.format(tmpdir)
@@ -596,8 +644,12 @@ def Segmentation( argv ):
         if not delete:
             os.remove( fmerged )
         os.remove( fsegshp )
+        if os.path.exists( fvrtvrt ):
+            os.remove( fvrtvrt )
+        if os.path.exists( tifin ):
+            os.remove( tifin )
 
-    print 'Done!'
+    print 'Done!', time.time() - startTime
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:

@@ -79,6 +79,8 @@ Usage: ror_cli [-h|--help]
             [-R|--ram int(MB)]      - available ram for processing
             [-j|--job name]         - unique job name, will be used to
                                       to create table to store segments in
+            [--debug]               - do not remove tmp files
+            [--usetif]              - convert input vrt to tif
             NOTE: --optimal will take a 1024x1024 image located at the center
                   of --area to compute the optimal parameters. If you want more
                   control over where the the sample is selected, use option
