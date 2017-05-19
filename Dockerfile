@@ -12,6 +12,14 @@
 #
 #          monteverdi2 mesa-utils xserver-xorg-video-all \
 #
+# one of the following two lines can be used below to select
+# which repository to use.
+# the 1st has otb version 5.4.0
+# the 2nd has otb version 5.8.0
+#
+#        add-apt-repository ppa:ubuntugis/ppa &&\
+#        add-apt-repository ppa:ubuntugis/ubuntugis-experimental &&\
+#
 
 FROM ubuntu:16.04
 MAINTAINER Stephen Woodbridge <woodbri@imaptools.com>
@@ -19,7 +27,7 @@ MAINTAINER Stephen Woodbridge <woodbri@imaptools.com>
 RUN apt-get -qqy update &&\
         apt-get -qqy install software-properties-common &&\
         apt-get -qqy update &&\
-        add-apt-repository ppa:ubuntugis/ppa &&\
+        add-apt-repository ppa:ubuntugis/ubuntugis-experimental &&\
         apt-get -qqy update &&\
         apt-get -qqy install \
           gdal-bin \
