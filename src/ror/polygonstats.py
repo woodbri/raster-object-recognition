@@ -62,15 +62,26 @@ class PolygonStats:
         return gg.GetGeometryRef(0).GetPoints()
 
     def area(self):
-        """Return polygon area (FRAGSTATS P4 AREA)"""
+        """Return polygon area (FRAGSTATS P4 AREA)
+           AREA > 0, without limit.
+        """
         return self._area
 
     def perim(self):
-        """Return polygon perimeter (FRAGSTATS P5 PERIM)"""
+        """Return polygon perimeter (FRAGSTATS P5 PERIM)
+           PERIM > 0, without limit.
+        """
         return self._perim
 
     def para(self):
-        """Return polygon perimeter-area ratio (FRAGSTATS P7 PARA)"""
+        """Return polygon perimeter-area ratio (FRAGSTATS P7 PARA)
+        PARA > 0, without limit. Perimeter-area ratio is a simple measure
+        of shape complexity, but without standardization to a simple
+        Euclidean shape (e.g., square). A problem with this metric as a
+        shape index is that it varies with the size of the patch. For
+        example, holding shape constant, an increase in patch size will
+        cause a decrease in the perimeter-area ratio.
+        """
         if self._area > 0.0:
             return self._perim / self._area
         else:
@@ -78,7 +89,9 @@ class PolygonStats:
 
     def compact(self):
         """Return polygon compactness. A ratio of the polygons area
-        to the area of the minimum circumscribed circle."""
+        to the area of the minimum circumscribed circle.
+        0 <= COMPACT <= 1, COMPACT = 1 is maximum compactness, ie: a circle
+        """
         if self._circle is None:
             return None
         else:
@@ -87,13 +100,19 @@ class PolygonStats:
     def compact2(self):
         """
         Return polygon alternate compactness metric.
+        The isoperimetric quotient, the ratio of the area of the shape
+        to the area of a circle (the most compact shape) having the same
+        perimeter.
+        0 <= COMPACT2 <= 1, COMPACT2 = 1 is maximum compactness, ie: a circle
         http://en.wikipedia.org/wiki/Compactness_measure_of_a_shape
         """
         return 4.0 * math.pi * self._area / math.pow(self._perim, 2.0)
 
     def smooth(self):
         """Return polygon smoothness metric. A ratio of polygon perimeter
-        to the perimeter of the minimum circumscribed circle."""
+        to the perimeter of the minimum circumscribed circle.
+        1 <= SMOOTH, without limit. Perimeter complexity increases with SMOOTH.
+        """
         if self._circle is None:
             return None
         else:
@@ -101,14 +120,18 @@ class PolygonStats:
 
     def shape(self):
         """Return polygon shape index (FRAGSTATS P2 SHAPE)
-        Based on Shape Index from FRAGSTATS ver 4.2
+        SAHPE >= 1, without limit. SHAPE = 1 when the patch is square and
+        increases without limit as patch shape becomes more irregular.
+        Based on Shape Index from FRAGSTATS ver 4.2 (pg. 104)
         http://www.umass.edu/landeco/research/fragstats/documents/fragstats.help.4.2.pdf
         """
         return 0.25 * self._perim / math.sqrt(self._area)
 
 
     def frac(self):
-        """Return polygon fractal dimension index (FRAGSTATS P9 FRAC)"""
+        """Return polygon fractal dimension index (FRAGSTATS P9 FRAC)
+        1 <= FRAC <= 2, shape complexity increases with FRAC.
+        """
         perim = self._perim / 4.0
         if self._area <= 1 or perim < 1:
             return 1.0
@@ -116,7 +139,9 @@ class PolygonStats:
             return 2.0 * math.log(perim) / math.log(self._area)
 
     def circle(self):
-        """Return polygon circluarity ratio (FRAGSTATS P11 CIRCLE)"""
+        """Return polygon circluarity ratio (FRAGSTATS P11 CIRCLE)
+        0 <= CIRCLE < 1, and overall measure of shape elongation.
+        """
         if self._circle is None:
             return None
         else:
