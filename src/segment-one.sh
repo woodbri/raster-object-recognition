@@ -24,6 +24,9 @@ MPI="mpirun -np 4 --bind-to socket"
 # OPTS="-thres 0.001 -maxiter 4"
 OPTS="-thres 0.1 -maxiter 100"
 
+# Set this to the number of cores in each socket
+export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=14
+
 date
 CMD="$MPI otbcli_MeanShiftSmoothing -in $INFILE -fout $SMOOTH -foutpos $SMOOTHPOS -spatialr $HS -ranger $HR -ram $RAM $OPTS"
 echo $CMD
