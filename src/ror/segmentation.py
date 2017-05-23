@@ -533,6 +533,8 @@ def Segmentation( argv ):
         vrtin = infile
         fsegshp    = os.path.join(tmpdir, 'tmp-{}-segments.shp'.format(pid))
 
+    fvrtvrt = vrtin + '.vrt'
+
     if usetif:
         if vrtin[-3:] == 'vrt':
             cmd = ['gdal_translate', vrtin, tifin]
@@ -636,18 +638,25 @@ def Segmentation( argv ):
         print 'Leaving tmp files in {}.'.format(tmpdir)
     else:
         print 'Cleanning up tmp files ...'
-        if infile is None:
-            os.remove( vrtin )
-        os.remove( fsmooth )
-        os.remove( fsmoothpos )
-        os.remove( fsegs )
-        if not delete:
-            os.remove( fmerged )
-        os.remove( fsegshp )
-        if os.path.exists( fvrtvrt ):
-            os.remove( fvrtvrt )
-        if os.path.exists( tifin ):
-            os.remove( tifin )
+        try:
+            if infile is None:
+                os.remove( vrtin )
+            os.remove( fsmooth )
+            os.remove( fsmoothpos )
+            os.remove( fsegs )
+            if not delete:
+                os.remove( fmerged )
+            os.remove( fsegshp )
+            if os.path.exists( fvrtvrt ):
+                os.remove( fvrtvrt )
+            if os.path.exists( tifin ):
+                os.remove( tifin )
+            if os.path.exists( vrtin + '.aux.xml' ):
+                os.remove( vrtin + '.aux.xml' )
+            if os.path.exists( vrtin + '.msk' ):
+                os.remove( vrtin + '.msk' )
+	except:
+            print "Failed to remove some tmp files!"
 
     print 'Done!', time.time() - startTime
 
