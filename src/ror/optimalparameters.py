@@ -205,7 +205,7 @@ def getOptimalHs( ds, useBands, drange, verbose, plotit ):
         opt = getOptimalSV( b1, data[ii], drange, verbose, plotit )
         opt_hs.append(opt[2])
         if verbose:
-            print 'Band {}: optimal h: {}'.format(b1, opt)
+            print 'Band {}: optimal Hs: {}'.format(b1, opt)
 
         if plotit:
             x = range(drange[0], drange[1], drange[2])
@@ -280,7 +280,7 @@ def getOptimalHr( ds, useBands, winsize, verbose, plotit ):
         # from where the curve peaks
         #
         # in theory we want the first non false peak as
-        # it is possible to multiple peaks but for now
+        # it is possible to have multiple peaks but for now
         # we fit it to a gausian curve which has a single peak
 
         tmp = np.array( data )

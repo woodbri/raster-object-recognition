@@ -122,9 +122,9 @@ approximation in most cases. But this does give reasonable parameters for a
 starting place for parameter evaluation.
 
 I would recommend computing the parameters on a 512x512 image, then segmenting
-that image using those parameters. Pick you image area as representitive to
+that image using those parameters. Pick your image area as representative to
 your area of interest. Check the segmentation and lower or raise the valued
-based on wheter the image was over or under segmentized, and repeat. I was able
+based on whether the image was over or under segmented, and repeat. I was able
 to come up with a reasonable value in a few iterations.
 
 You can optionally have the code generate graphs of the curves that are being
