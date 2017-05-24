@@ -189,7 +189,7 @@ def getNaipFiles(year, areaOfInterest, donaip):
 
 def FetchNaip( argv ):
     try:
-        opts, args = getopt.getopt(argv, "y:a:", ['no-shp', 'no-naip', 'status', 'area'])
+        opts, args = getopt.getopt(argv, "y:a:", ['no-shp', 'no-naip', 'status', 'area', 'all-states'])
     except:
         return True # error occurred
 
