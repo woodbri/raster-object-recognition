@@ -12,7 +12,7 @@
 '''
 
 import math
-from osgeo import ogr
+from osgeo import ogr, osr
 from minboundingcircle import getCircle
 
 class PolygonStats:
@@ -54,7 +54,15 @@ class PolygonStats:
         dy = ymax - ymin
         self._bbperm = 2.0*(dx + dy)
         self._bbarea = dx * dy
-        self._circle = getCircle(self._geom.GetGeometryRef(0).GetPoints())
+        #self._circle = getCircle(self._geom.GetGeometryRef(0).GetPoints())
+        # we hit python recursion limits on big polygons, so
+        # changed this to use the convex hull of the polygon which
+        # will give the same result with far less points
+        # when computing the minimum bounding circle of the polygon
+        chull = self._geom.ConvexHull()
+        chullref = chull.GetGeometryRef(0)
+        chullpts = chullref.GetPoints()
+        self._circle = getCircle(chullpts)
 
     def getPoints(self):
         """Return a list of points from a polygon geometry"""
@@ -199,8 +207,20 @@ def addShapefileStats(shapefile):
     layer.CreateField(ogr.FieldDefn("frac",     ogr.OFTReal))
     layer.CreateField(ogr.FieldDefn("circle",   ogr.OFTReal))
 
+    # reproject the geometry into global mercator (EPSG:3857)
+    # some units are in meters and meters**2 perimeter and areas
+
+    srs_s = layer.GetSpatialRef()
+    srs_t = osr.SpatialReference()
+    srs_t.ImportFromEPSG(3857)
+    transform = osr.CoordinateTransformation(srs_s, srs_t)
+
     for feature in layer:
-        geom = feature.GetGeometryRef()
+        # clone the geometry so we don't change the projection 
+        # of the source shape file data, only the data we use
+        # to compute the stats with
+        geom = feature.GetGeometryRef().Clone()
+        geom.Transform(transform)
         ps = PolygonStats( geom )
         stats = ps.getAllStatsList()
         if not stats[0] is None:

@@ -39,15 +39,19 @@ def getCircle(points):
     or None on failure
     '''
 
+    # round the data to 6 significant decimal places
+    # and remove duplicate points
+    pnts = [list(y) for y in list(set((round(float(x[0]),6), round(float(x[1]),6)) for x in points))]
+
     # algorithm calls for randomized insertion of pnts
-    pnts = [(float(p[0]), float(p[1])) for p in points]
     random.shuffle(pnts)
 
     #return _mec(pnts, len(pnts), [])
     bnd = [None, None, None]
     try:
         D = minidisk(pnts, len(pnts), bnd, 0)
-    except:
+    except Exception, e:
+        print "EXCEPTION: " + str(e) + " (npts: " + str(len(points)) + ")"
         D = None
     return D
 
@@ -65,7 +69,17 @@ def minidisk(pt, np, bnd, nb):
         elif nb == 2:
             return _calcCircle2([bnd[0], bnd[1]])
     if nb == 3:
+        # if any of the points are coincident
+        # or the three points are colinear
+        # this causes _calcCircle3 to fail and return None
+        # Not sure how to recover from this! FIXME
+        # I think I'm dealing with this by converting the
+        # the polygon to a convex hull which should not have
+        # duplicate points (other than start and end points)
+        # and I'm filtering out duplicate points
+        # this is/should be getting done by the caller
         return _calcCircle3([bnd[0], bnd[1], bnd[2]])
+
     D = minidisk(pt, np-1, bnd, nb)
     dx = pt[np-1][0]-D[0]
     dy = pt[np-1][1]-D[1]
@@ -149,6 +163,7 @@ def _calcCircle1(pnts):
 
 def _test():
     p1 = [[1,0],[2,1],[1,2],[0,1],[.5,1.5],[1.5,1.5],[.5,.5],[1.5,.5]]
+    p1 = [[1,0],[1,0],[2,1],[1,2],[0,1],[.5,1.5],[1.5,1.5],[.5,.5],[1.5,.5]]
     c = getCircle(p1)
     print c
 
