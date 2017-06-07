@@ -149,7 +149,8 @@ def processDOQQ(row, procn, year):
     # gdal_translate jpeg compress it to target
     cmd = ['gdal_translate', '-co', 'TILED=YES', '-co', 'JPEG_QUALITY=90',
            '-co', 'COMPRESS=JPEG', '-co', 'INTERLEAVE=BAND',
-           '-mask', str(mask), '-co', 'ALPHA=YES',
+           # '-mask', str(mask), '-co', 'ALPHA=YES',
+           '-mask', str(mask),
            '--config', 'GDAL_TIFF_INTERNAL_MASK', 'YES', vrtfile, f_target]
     runCommand( cmd, verbose )
 
