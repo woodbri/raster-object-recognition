@@ -1,5 +1,17 @@
 #!/bin/sh
 
+if [ "$1" = "ror" ] ; then
+    tag=my_image_processing
+elif [ "$1" = "otb5.8" ] ; then
+    tag=my_otb_58
+elif [ "$1" = "otb6.0" ] ; then
+    tag=my_otb_60
+else
+    echo "Usage: docker-run [ror|otb5.8|otb6.0]"
+    exit
+fi
+
+
 sudo docker run -it \
     --add-host=database:10.2.1.52 \
     --user=$(id -u) \
@@ -13,5 +25,5 @@ sudo docker run -it \
     --volume="/etc/sudoers.d:/etc/sudoers.d:ro" \
     --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" \
     --volume="/u:/u:rw" \
-    my_image_processing
+    $tag
 

@@ -1,4 +1,21 @@
 #!/bin/sh
 
-sudo docker build -t my_image_processing .
+
+if [ "$1" = "ror" ] ; then
+    dfile=Dockerfile
+    tag=my_image_processing
+elif [ "$1" = "otb5.8" ] ; then
+    dfile=Dockerfile-otb-58
+    tag=my_otb_58
+elif [ "$1" = "otb6.0" ] ; then
+    dfile=Dockerfile-otb-60
+    tag=my_otb_60
+else
+    echo "Usage: docker-build [ror|otb5.8|otb6.0]"
+    exit
+fi
+
+echo "Using Dockerfile: '$dfile' and tag: '$tag'"
+
+sudo docker build -t $tag -f $dfile
 
