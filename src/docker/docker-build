@@ -17,5 +17,5 @@ fi
 
 echo "Using Dockerfile: '$dfile' and tag: '$tag'"
 
-sudo docker build -t $tag -f $dfile
+sudo docker build -t $tag -f $dfile .
 

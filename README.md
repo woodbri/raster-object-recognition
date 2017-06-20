@@ -39,7 +39,7 @@ If you don't have Docker installed on your system, then go
 [HERE](https://www.docker.com/) and find the downloads or instructions for
 your system and install the Docker runtime.
 
-There example scripts to build a Docker image and to run the Docker image in
+There are example scripts to build a Docker image and to run the Docker image in
 ``src/docker/``.
 
 ### Use of host services
@@ -118,12 +118,12 @@ segment size (M) can be predicted from the spatial bandwidth.
 
 This approach is not without some problems. For example, using a Gaussian curve
 to fit to the histogram is not ideal, but it is fast and gives a reasonable
-approximation in most cases. But this does give reasonable parameters for a
+approximation in most cases. And, this does give reasonable parameters for a
 starting place for parameter evaluation.
 
 I would recommend computing the parameters on a 512x512 image, then segmenting
 that image using those parameters. Pick your image area as representative to
-your area of interest. Check the segmentation and lower or raise the valued
+your area of interest. Check the segmentation and lower or raise the values
 based on whether the image was over or under segmented, and repeat. I was able
 to come up with a reasonable value in a few iterations.
 
